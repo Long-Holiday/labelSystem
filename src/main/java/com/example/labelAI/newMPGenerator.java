@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.generator.config.rules.DateType;
 import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
 import com.baomidou.mybatisplus.generator.fill.Column;
 import com.baomidou.mybatisplus.generator.fill.Property;
+import com.example.labelAI.utils.UserConfig;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -16,12 +17,21 @@ import java.sql.ResultSet;
 import java.util.*;
 
 public class newMPGenerator {
-    // 配置数据库信息
-    private static final String URL = "jdbc:postgresql://localhost:5432/label?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8";
-    private static final String USERNAME = "postgres";
-    private static final String PASSWORD = "88888888";
-    private static final String driverClassName = "org.postgresql.Driver";
+    //    定义多个用户的配置
+    private static final Map<String, UserConfig> userConfigs = new HashMap<>();
+
+    static {
+        userConfigs.put("wanghua", new UserConfig("postgres", "88888888", "jdbc:postgresql://localhost:5432/label?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8", "org.postgresql.Driver"));
+        userConfigs.put("wangwu", new UserConfig("postgres", "11111111", "jdbc:postgresql://localhost:5432/labelai?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8", "org.postgresql.Driver"));
+        // 添加更多用户配置...
+    }
+
+    public static UserConfig getUserConfig(String username) {
+        return userConfigs.get(username);
+    }
+
     public static void main(String[] args) {
+
         // 数据源配置
         FastAutoGenerator.create("jdbc:postgresql://localhost:5432/label?serverTimezone=GMT%2B8", "postgres", "88888888")
                 .globalConfig(builder -> {
@@ -46,19 +56,19 @@ public class newMPGenerator {
                     //默认存放在mapper的xml下
                 })
                 //注入配置
-               /* .injectionConfig(consumer -> {
-                    Map<String, String> customFile = new HashMap<>();
-                    // DTO、VO
-                    customFile.put("DTO.java", "/templates/entityDTO.java.ftl");
-                    customFile.put("VO.java", "/templates/entityVO.java.ftl");
+                /* .injectionConfig(consumer -> {
+                     Map<String, String> customFile = new HashMap<>();
+                     // DTO、VO
+                     customFile.put("DTO.java", "/templates/entityDTO.java.ftl");
+                     customFile.put("VO.java", "/templates/entityVO.java.ftl");
 
-                    consumer.customFile(customFile);
-                })*/
+                     consumer.customFile(customFile);
+                 })*/
 
                 .strategyConfig(builder -> {
                     try {
                         builder.addInclude(getTables("label")) // 设置需要生成的表名 可边长参数“user”, “user1”，此处匹配所有表
-    //                            .addTablePrefix("tb_", "gms_") // 设置过滤表前缀
+                                //                            .addTablePrefix("tb_", "gms_") // 设置过滤表前缀
                                 .serviceBuilder()//service策略配置
                                 .formatServiceFileName("%sService")
                                 .formatServiceImplFileName("%sServiceImpl")
@@ -92,6 +102,23 @@ public class newMPGenerator {
     // 获取某个数据库中的所有表名
 
     private static String[] getTables(String dbName) throws Exception {
+        String URL = null;
+        String USERNAME = null;
+        String PASSWORD = null;
+        String driverClassName = null;
+
+        String username = "zhangsan"; // 更改用户名
+        UserConfig userConfig = getUserConfig(username);
+        if (userConfig != null) {
+            URL = userConfig.getUrl();
+            USERNAME = userConfig.getUsername();
+            PASSWORD = userConfig.getPassword();
+            driverClassName = userConfig.getDriverClassName();
+            // 你可以在这里使用这些变量
+        } else {
+            System.out.println("没有找到对应的用户配置");
+            System.exit(0);
+        }
         List<String> tables = new ArrayList<>();
 
         Connection connection = null;
@@ -99,10 +126,10 @@ public class newMPGenerator {
         ResultSet resultSet = null;
         try {
             Class.forName(driverClassName);
-            connection = DriverManager.getConnection(URL,USERNAME,PASSWORD);
+            connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
             String sql = "select table_name from information_schema.tables where table_schema=?";
             ps = connection.prepareStatement(sql);
-            ps.setString(1,dbName);
+            ps.setString(1, dbName);
             resultSet = ps.executeQuery();
             while (resultSet.next()) {
                 tables.add(resultSet.getString("table_name"));
