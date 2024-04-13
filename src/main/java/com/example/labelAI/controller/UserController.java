@@ -1,8 +1,8 @@
-package com.example.rmhospital.controller;
+package com.example.labelAI.controller;
 
-import com.example.rmhospital.domain.User;
-import com.example.rmhospital.service.UserService;
-import com.example.rmhospital.utils.Result;
+import com.example.labelAI.domain.User;
+import com.example.labelAI.service.UserService;
+import com.example.labelAI.utils.Result;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

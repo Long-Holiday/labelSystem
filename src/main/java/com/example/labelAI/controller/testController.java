@@ -1,12 +1,9 @@
-package com.example.rmhospital.controller;
+package com.example.labelAI.controller;
 
-import com.example.rmhospital.domain.User;
-import com.example.rmhospital.service.UserService;
+import com.example.labelAI.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 public class testController {

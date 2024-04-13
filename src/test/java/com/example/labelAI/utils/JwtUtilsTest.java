@@ -1,4 +1,4 @@
-package com.example.rmhospital.utils;
+package com.example.labelAI.utils;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;

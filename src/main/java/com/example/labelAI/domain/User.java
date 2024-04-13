@@ -1,4 +1,4 @@
-package com.example.rmhospital.domain;
+package com.example.labelAI.domain;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;

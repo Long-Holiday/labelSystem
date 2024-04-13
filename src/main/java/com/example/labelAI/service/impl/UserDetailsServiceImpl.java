@@ -1,8 +1,8 @@
-package com.example.rmhospital.service.impl;
+package com.example.labelAI.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.example.rmhospital.domain.User;
-import com.example.rmhospital.mapper.UserMapper;
+import com.example.labelAI.domain.User;
+import com.example.labelAI.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

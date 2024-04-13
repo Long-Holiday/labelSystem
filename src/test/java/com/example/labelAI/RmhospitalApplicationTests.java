@@ -1,4 +1,4 @@
-package com.example.rmhospital;
+package com.example.labelAI;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

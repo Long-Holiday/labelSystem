@@ -1,12 +1,11 @@
-package com.example.rmhospital.service.impl;
+package com.example.labelAI.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.example.rmhospital.domain.User;
-import com.example.rmhospital.mapper.UserMapper;
-import com.example.rmhospital.service.UserService;
-import com.example.rmhospital.utils.JwtUtils;
-import com.example.rmhospital.utils.Result;
-import io.swagger.models.auth.In;
+import com.example.labelAI.domain.User;
+import com.example.labelAI.mapper.UserMapper;
+import com.example.labelAI.service.UserService;
+import com.example.labelAI.utils.JwtUtils;
+import com.example.labelAI.utils.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;

@@ -1,7 +1,5 @@
-package com.example.rmhospital.config;
+package com.example.labelAI.config;
 
-import com.alibaba.fastjson2.TypeReference;
-import com.example.rmhospital.domain.User;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,8 +10,6 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-
-import java.util.Map;
 
 @Configuration
 public class RedisConfig {

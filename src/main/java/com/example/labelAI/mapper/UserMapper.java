@@ -1,7 +1,7 @@
-package com.example.rmhospital.mapper;
+package com.example.labelAI.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.example.rmhospital.domain.User;
+import com.example.labelAI.domain.User;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;

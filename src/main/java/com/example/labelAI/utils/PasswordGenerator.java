@@ -1,4 +1,4 @@
-package com.example.rmhospital.utils;
+package com.example.labelAI.utils;
 
 import java.security.SecureRandom;
 /**

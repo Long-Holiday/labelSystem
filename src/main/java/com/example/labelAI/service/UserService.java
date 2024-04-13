@@ -1,7 +1,7 @@
-package com.example.rmhospital.service;
+package com.example.labelAI.service;
 
-import com.example.rmhospital.domain.User;
-import com.example.rmhospital.utils.Result;
+import com.example.labelAI.domain.User;
+import com.example.labelAI.utils.Result;
 
 import java.util.List;
 import java.util.Map;

@@ -1,4 +1,4 @@
-package com.example.rmhospital;
+package com.example.labelAI;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.core.exceptions.MybatisPlusException;
