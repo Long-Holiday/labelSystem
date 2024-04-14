@@ -9,9 +9,9 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.example</groupId>
-    <artifactId>rmhospital</artifactId>
+    <artifactId>labelMark</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>rmhospital</name>
+    <name>labelMark</name>
     <description>Demo project for Spring Boot</description>
     <properties>
         <java.version>17</java.version>
@@ -92,7 +92,11 @@
             <artifactId>springfox-boot-starter</artifactId>
             <version>3.0.0</version>
         </dependency>
-
+        <!-- postgresql依赖 -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
     </dependencies>
     <profiles>
         <!-- 开发环境 -->

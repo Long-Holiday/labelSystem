@@ -1,11 +1,11 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : rmhospital
+ Source Server         : labelMark
  Source Server Type    : MySQL
  Source Server Version : 80027
  Source Host           : localhost:3306
- Source Schema         : rmhospital
+ Source Schema         : labelMark
 
  Target Server Type    : MySQL
  Target Server Version : 80027
