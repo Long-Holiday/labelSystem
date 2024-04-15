@@ -1,4 +1,4 @@
-package com.example.labelAI;
+package com.example.labelMark.utils;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -8,39 +8,39 @@ import com.baomidou.mybatisplus.generator.config.rules.DateType;
 import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
 import com.baomidou.mybatisplus.generator.fill.Column;
 import com.baomidou.mybatisplus.generator.fill.Property;
-import com.example.labelAI.utils.UserConfig;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
+/**
+ * @Description
+ * @Author wh
+ * @Date 2024/4/15
+ */
 public class newMPGenerator {
-    //    定义多个用户的配置
-    private static final Map<String, UserConfig> userConfigs = new HashMap<>();
-
-    static {
-        userConfigs.put("wanghua", new UserConfig("postgres", "88888888", "jdbc:postgresql://localhost:5432/label?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8", "org.postgresql.Driver"));
-        userConfigs.put("wangwu", new UserConfig("postgres", "11111111", "jdbc:postgresql://localhost:5432/labelai?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8", "org.postgresql.Driver"));
-        // 添加更多用户配置...
-    }
-
-    public static UserConfig getUserConfig(String username) {
-        return userConfigs.get(username);
-    }
+    // 配置数据库信息
+    private static final String URL = "jdbc:postgresql://localhost:5432/label?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8";
+    private static final String USERNAME = "postgres";
+    private static final String PASSWORD = "88888888";
+    private static final String driverClassName = "org.postgresql.Driver";
 
     public static void main(String[] args) {
-
         // 数据源配置
         FastAutoGenerator.create("jdbc:postgresql://localhost:5432/label?serverTimezone=GMT%2B8", "postgres", "88888888")
                 .globalConfig(builder -> {
                     builder.author("wh")        // 设置作者
                             .enableSwagger()        // 开启 swagger 模式 默认值:false
+                            .fileOverride() // 覆盖已生成文件
                             .disableOpenDir()       // 禁止打开输出目录 默认值:true
                             .commentDate("yyyy-MM-dd") // 注释日期
                             .dateType(DateType.ONLY_DATE)   //定义生成的实体类中日期类型 DateType.ONLY_DATE 默认值: DateType.TIME_PACK
                             .outputDir(System.getProperty("user.dir") + "/src/main/java"); // 指定输出目录
+
                 })
 
                 .packageConfig(builder -> {
@@ -67,7 +67,7 @@ public class newMPGenerator {
 
                 .strategyConfig(builder -> {
                     try {
-                        builder.addInclude(getTables("label")) // 设置需要生成的表名 可边长参数“user”, “user1”，此处匹配所有表
+                        builder.addInclude(getTables("label")) // 设置需要生成的表名 可边长参数“user”, “user1”，此处匹配所有表(填写数据库名)
                                 //                            .addTablePrefix("tb_", "gms_") // 设置过滤表前缀
                                 .serviceBuilder()//service策略配置
                                 .formatServiceFileName("%sService")
@@ -90,35 +90,27 @@ public class newMPGenerator {
                         throw new RuntimeException(e);
                     }
                 })
+//                自定义生成文件的模板文件位置
+/*                .templateConfig(builder -> {
+                    builder.service("/templates/service.java")
+                            .serviceImpl("/templates/serviceImpl.java")
+                            .mapper(null)
+                            .xml(null)
+                            .controller("/templates/controller.java");
+                })*/
 
-
-                // 使用Freemarker引擎模板，默认的是Velocity引擎模板
+// 使用Freemarker引擎模板，默认的是Velocity引擎模板
                 .templateEngine(new FreemarkerTemplateEngine())
 //                .templateEngine(new EnhanceFreemarkerTemplateEngine())
+
                 .execute();
+
 
     }
 
     // 获取某个数据库中的所有表名
 
     private static String[] getTables(String dbName) throws Exception {
-        String URL = null;
-        String USERNAME = null;
-        String PASSWORD = null;
-        String driverClassName = null;
-
-        String username = "zhangsan"; // 更改用户名
-        UserConfig userConfig = getUserConfig(username);
-        if (userConfig != null) {
-            URL = userConfig.getUrl();
-            USERNAME = userConfig.getUsername();
-            PASSWORD = userConfig.getPassword();
-            driverClassName = userConfig.getDriverClassName();
-            // 你可以在这里使用这些变量
-        } else {
-            System.out.println("没有找到对应的用户配置");
-            System.exit(0);
-        }
         List<String> tables = new ArrayList<>();
 
         Connection connection = null;
