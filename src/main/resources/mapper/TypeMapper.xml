@@ -2,14 +2,12 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.labelAI.mapper.TypeMapper">
+<mapper namespace="com.example.labelMark.mapper.TypeMapper">
 
-    <resultMap id="BaseResultMap" type="com.example.labelAI.domain.Type">
+    <resultMap id="BaseResultMap" type="com.example.labelMark.domain.Type">
             <result property="typeId" column="type_id" jdbcType="INTEGER"/>
             <result property="typeName" column="type_name" jdbcType="VARCHAR"/>
             <result property="typeColor" column="type_color" jdbcType="VARCHAR"/>
-            <result property="currentSize" column="current_size" jdbcType="INTEGER"/>
-            <result property="pageSize" column="page_size" jdbcType="INTEGER"/>
     </resultMap>
 
     <sql id="Base_Column_List">

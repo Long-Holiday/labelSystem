@@ -3,6 +3,7 @@ package com.example.labelMark;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.Bean;
 import springfox.documentation.oas.annotations.EnableOpenApi;
@@ -13,7 +14,7 @@ import springfox.documentation.oas.annotations.EnableOpenApi;
  * @Date 2024/4/15
  */
 
-@SpringBootApplication
+@SpringBootApplication(exclude = {SecurityAutoConfiguration.class})
 @EnableOpenApi
 @ServletComponentScan(basePackages = "com.example.labelMark")
 public class LabelMarkApplication {

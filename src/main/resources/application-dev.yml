@@ -6,12 +6,12 @@ spring:
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher
-  # 数据源配置，用于连接 MySQL 数据库
+  # 数据源配置，用于连接 PostgreSQL 数据库
   datasource:
-    url: jdbc:mysql://localhost:3306/rmhospital  # MySQL 数据库的 JDBC URL
-    username: root  # 数据库用户名
-    password: mysql  # 数据库密码
-    driver-class-name: com.mysql.cj.jdbc.Driver  # MySQL JDBC 驱动类名
+    url: jdbc:postgresql://localhost:5432/postgres  # PostgreSQL 数据库的 JDBC URL
+    username: postgres  # 数据库用户名
+    password: hjw123  # 数据库密码
+    driver-class-name: org.postgresql.Driver  # PostgreSQL JDBC 驱动类名
     # Spring Security 配置，用于 JWT 身份验证
   security:
     jwt:
@@ -27,3 +27,8 @@ spring:
     port: 6379        # Redis服务器端口
     password:         # Redis服务器密码（如果有的话）
     database: 0       # Redis数据库索引，默认是0
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB

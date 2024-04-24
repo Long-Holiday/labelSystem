@@ -24,16 +24,16 @@ import java.util.List;
  */
 public class newMPGenerator {
     // 配置数据库信息
-    private static final String URL = "jdbc:postgresql://localhost:5432/label?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8";
+    private static final String URL = "jdbc:postgresql://localhost:5432/postgres?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8";
     private static final String USERNAME = "postgres";
-    private static final String PASSWORD = "88888888";
+    private static final String PASSWORD = "hjw123";
     private static final String driverClassName = "org.postgresql.Driver";
 
     public static void main(String[] args) {
         // 数据源配置
-        FastAutoGenerator.create("jdbc:postgresql://localhost:5432/label?serverTimezone=GMT%2B8", "postgres", "88888888")
+        FastAutoGenerator.create("jdbc:postgresql://localhost:5432/postgres?fileTimezone=GMT%2B8", "postgres", "hjw123")
                 .globalConfig(builder -> {
-                    builder.author("wh")        // 设置作者
+                    builder.author("hjw")        // 设置作者
                             .enableSwagger()        // 开启 swagger 模式 默认值:false
                             .fileOverride() // 覆盖已生成文件
                             .disableOpenDir()       // 禁止打开输出目录 默认值:true
@@ -67,7 +67,7 @@ public class newMPGenerator {
 
                 .strategyConfig(builder -> {
                     try {
-                        builder.addInclude(getTables("label")) // 设置需要生成的表名 可边长参数“user”, “user1”，此处匹配所有表(填写数据库名)
+                        builder.addInclude("file") // 设置需要生成的表名 可边长参数“user”, “user1”，此处匹配所有表(填写数据库名)
                                 //                            .addTablePrefix("tb_", "gms_") // 设置过滤表前缀
                                 .serviceBuilder()//service策略配置
                                 .formatServiceFileName("%sService")

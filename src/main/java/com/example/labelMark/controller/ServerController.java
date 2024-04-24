@@ -10,7 +10,7 @@ import com.example.labelMark.vo.constant.Result;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
+
 
 import javax.annotation.Resource;
 import java.io.*;
@@ -76,7 +76,7 @@ public class ServerController {
         }
     }
 
-    @PostMapping("/downloadServerImg")
+    @GetMapping ("/downloadServerImg")
     public Result downloadServerImg(String serverName){
 
         String jsonStr = geoServerRESTClient.GeoServerString(serverName);
@@ -118,7 +118,7 @@ public class ServerController {
         params.add("width", String.valueOf((int)width));
         params.add("height", "600");
         params.add("srs", srs);
-        params.add("format", "image.jepg");
+        params.add("format", "image.jpeg");
 
         try {
             // 发送WMS请求
@@ -131,14 +131,14 @@ public class ServerController {
             if (response.statusCode() == 500) {
                 // 获取响应体
                 InputStream inputStream = response.body();
-                Path filePath = Paths.get(DOWNLOAD_DIR, serverName + ".shp");
+                Path filePath = Paths.get(DOWNLOAD_DIR, serverName + ".jpeg");
 
                 // 将输入流写入文件
                 Files.copy(inputStream, filePath);
                 // 关闭输入流
                 inputStream.close();
 
-                return ResultGenerator.getSuccessResult("Image downloaded successfully to" + filePath.toString());
+                return ResultGenerator.getSuccessResult("Image downloaded successfully to" + filePath);
             } else {
                 return ResultGenerator.getFailResult("Failed to download image.");
             }
