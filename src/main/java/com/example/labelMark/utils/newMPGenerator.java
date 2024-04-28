@@ -31,7 +31,7 @@ public class newMPGenerator {
 
     public static void main(String[] args) {
         // 数据源配置
-        FastAutoGenerator.create("jdbc:postgresql://localhost:5432/postgres?fileTimezone=GMT%2B8", "postgres", "hjw123")
+        FastAutoGenerator.create("jdbc:postgresql://localhost:5432/postgres?task_acceptedTimezone=GMT%2B8", "postgres", "hjw123")
                 .globalConfig(builder -> {
                     builder.author("hjw")        // 设置作者
                             .enableSwagger()        // 开启 swagger 模式 默认值:false
@@ -67,7 +67,7 @@ public class newMPGenerator {
 
                 .strategyConfig(builder -> {
                     try {
-                        builder.addInclude("file") // 设置需要生成的表名 可边长参数“user”, “user1”，此处匹配所有表(填写数据库名)
+                        builder.addInclude("task_accepted") // 设置需要生成的表名 可边长参数“user”, “user1”，此处匹配所有表(填写数据库名)
                                 //                            .addTablePrefix("tb_", "gms_") // 设置过滤表前缀
                                 .serviceBuilder()//service策略配置
                                 .formatServiceFileName("%sService")

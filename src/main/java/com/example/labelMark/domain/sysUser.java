@@ -1,0 +1,51 @@
+package com.example.labelMark.domain;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
+import java.io.Serializable;
+
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * <p>
+ *
+ * </p>
+ *
+ * @author wh
+ * @since 2024-04-15
+ */
+@Getter
+@Setter
+@TableName("sys_user")
+@ApiModel(value = "User对象", description = "")
+public class sysUser implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @ApiModelProperty("用户标识符")
+    @TableId(value = "userid", type = IdType.ASSIGN_ID)
+    private Integer userid;
+
+    @TableField("username")
+    private String username;
+
+    @TableField("userpassword")
+    private String userpassword;
+    @ApiModelProperty("是否是管理员")
+    @TableField("isadmin")
+    private Integer isadmin;
+    @ApiModelProperty("完成任务数量")
+    @TableField("finishednum")
+    private Integer finishednum;
+    @ApiModelProperty("未完成任务数")
+    @TableField("unfinishednum")
+    private Integer unfinishednum;
+
+
+}

@@ -1,6 +1,6 @@
 package com.example.labelMark.controller;
 
-import com.example.labelMark.domain.SysUser;
+import com.example.labelMark.domain.sysUser;
 import com.example.labelMark.service.SysUserService;
 import com.example.labelMark.utils.ResultGenerator;
 import com.example.labelMark.vo.constant.Result;
@@ -30,7 +30,7 @@ public class SysUserController {
 
     @ApiOperation("创建用户")
     @RequestMapping(value = "/createUser", method = RequestMethod.POST)
-    public Result createUser(@RequestBody SysUser user) {
+    public Result createUser(@RequestBody sysUser user) {
         int isCreate = sysUserService.createUser(user);
         if (isCreate > 0) {
             return ResultGenerator.getSuccessResult();
