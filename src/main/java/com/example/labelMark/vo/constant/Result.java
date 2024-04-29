@@ -11,12 +11,12 @@ import lombok.Data;
 @Data
 // 非空返回
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-public class Result {
+public class Result<T> {
     private int code;
 
     private String message = "success";
 
-    private Object data;
+    private T data;
 
     public Result setCode(StatusEnum resultCode) {
         this.code = resultCode.code;
@@ -28,7 +28,7 @@ public class Result {
         return this;
     }
 
-    public Result setData(Object data) {
+    public Result setData(T data) {
         this.data = data;
         return this;
     }

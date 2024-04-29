@@ -1,5 +1,6 @@
-package com.example.labelAI.config;
+package com.example.labelMark.config;
 
+import com.example.labelMark.utils.FastJsonRedisSerializer;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,7 +19,27 @@ public class RedisConfig {
         LettuceConnectionFactory lettuceConnectionFactory = new LettuceConnectionFactory();
         return lettuceConnectionFactory;
     }
+
     @Bean
+    @SuppressWarnings(value = {"unchecked", "rawtypes"})
+    public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<Object, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+
+        FastJsonRedisSerializer serializer = new FastJsonRedisSerializer(Object.class);
+
+        // 使用StringRedisSerializer来序列化和反序列化redis的key值
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(serializer);
+
+        // Hash的key也采用StringRedisSerializer的序列化方式
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(serializer);
+
+        template.afterPropertiesSet();
+        return template;
+    }
+    /*@Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
@@ -36,6 +57,7 @@ public class RedisConfig {
 
         redisTemplate.afterPropertiesSet();
         return redisTemplate;
-    }
+    }*/
 
 }
+

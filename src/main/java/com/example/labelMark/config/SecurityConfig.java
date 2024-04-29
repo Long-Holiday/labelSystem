@@ -1,8 +1,11 @@
-package com.example.labelAI.config;
+package com.example.labelMark.config;
 
-
-import com.example.labelAI.filter.JwtFilter;
-import com.example.labelAI.service.impl.UserDetailsServiceImpl;
+import com.example.labelMark.filter.JwtAuthenticationTokenFilter;
+import com.example.labelMark.filter.JwtFilter;
+//import com.example.labelMark.handle.FailureHandler;
+//import com.example.labelMark.handle.LabelLogoutSuccessHandler;
+//import com.example.labelMark.handle.SuccessHandler;
+//import com.example.labelMark.handle.UsernamePasswordAuthenticationEntryPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,7 +13,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -18,23 +23,43 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import javax.servlet.Filter;
 import java.util.Arrays;
 
+/**
+ * @Description SpringSecurity配置拦截接口，过滤器，解码器
+ * @Author wh
+ * @Date 2024/4/15
+ */
 @Configuration
+//@EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
-    private UserDetailsServiceImpl userDetailsService;
-    @Autowired
     private JwtFilter jwtFilter;
+    @Autowired
+    JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
+//    @Autowired
+//    UsernamePasswordAuthenticationEntryPoint usernamePasswordAuthenticationEntryPoint;
+//    @Autowired
+//    SuccessHandler successHandler;
+//    @Autowired
+//    FailureHandler failureHandler;
+//    @Autowired
+//    LabelLogoutSuccessHandler labelLogoutSuccessHandler;
+
+
+
+/*    @Autowired
+    private UserDetailsServiceImpl userDetailsService;
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(userDetailsService)// 设置自定义的userDetailsService
                 .passwordEncoder(passwordEncoder());
-    }
+    }*/
 
     @Override
     public void configure(WebSecurity web) throws Exception {
-        web.ignoring().antMatchers("/css/**","/fonts/**","/images/**","/js/**");
+        web.ignoring().antMatchers("/css/**", "/fonts/**", "/images/**", "/js/**");
     }
 
     @Bean
@@ -42,6 +67,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         // 使用BCrypt加密密码
         return new BCryptPasswordEncoder();
     }
+
     //暴露认证接口
     @Override
     @Bean
@@ -53,21 +79,44 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-                .csrf().disable() // 禁用CSRF保护（在实际应用中请根据需要启用）
+                .csrf().disable()// 禁用CSRF保护（在实际应用中请根据需要启用）
+                //不通过Session获取SecurityContext
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
                 .authorizeRequests()
-                .antMatchers("/user/login","/user/checkEmail","/user/register").permitAll() // 不拦截登录接口
-                .antMatchers("/swagger-ui/**", "/webjars/**", "/swagger-resources/**", "/v2/**").permitAll() // 不拦截Swagger接口
+//                .antMatchers("/user/login","/user/checkEmail","/user/register").permitAll() // 不拦截登录接口
                 .antMatchers("/admin/**").hasRole("ADMIN")//管理员接口
-                .anyRequest().authenticated()
-
+                // 对于登录接口
+                .antMatchers("/user/login", "/user/register").permitAll()
+                .antMatchers(
+                        "/swagger-ui/**",
+                        "/webjars/**",
+                        "/swagger-resources/**",
+                        "/v2/**",
+                        "/doc.html/**",
+                        "/favicon.ico",
+                        "/v3/**"
+                ).permitAll() // 不拦截Swagger接口
+//                // 除上面外的所有请求全部需要鉴权认证
+//                .anyRequest().authenticated()
                 .and()
                 .formLogin().disable(); // 禁用默认的表单登录
-
+        //添加过滤器
+        http.addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
+////        添加没有许可时的处理器
+//        http.exceptionHandling().authenticationEntryPoint(usernamePasswordAuthenticationEntryPoint);
+////        添加登录成功的处理器
+//        http.formLogin().successHandler(successHandler);
+////        添加登录失败的处理器
+//        http.formLogin().failureHandler(failureHandler);
+//        //配置注销成功处理器
+//        http.logout()
+//                .logoutSuccessHandler(labelLogoutSuccessHandler);
         // 如果需要允许跨域请求，可以添加如下配置
         http.cors().configurationSource(corsConfigurationSource());
 
     }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource(){
         final CorsConfiguration configuration=new CorsConfiguration();
@@ -89,4 +138,5 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
         return source;
     }
+
 }

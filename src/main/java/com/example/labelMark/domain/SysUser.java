@@ -9,7 +9,9 @@ import java.io.Serializable;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 /**
@@ -39,6 +41,7 @@ public class SysUser implements Serializable {
     private String userpassword;
     @ApiModelProperty("是否是管理员")
     @TableField("isadmin")
+    @NonNull
     private Integer isadmin;
     @ApiModelProperty("完成任务数量")
     @TableField("finishednum")

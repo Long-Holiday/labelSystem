@@ -1,7 +1,6 @@
-package com.example.labelAI.filter;
+package com.example.labelMark.filter;
 
-import com.example.labelAI.utils.JwtUtils;
-
+import com.example.labelMark.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,11 +24,12 @@ import java.util.Map;
  */
 @Component
 public class JwtFilter extends OncePerRequestFilter {
-
     @Resource
-    JwtUtils utils;
+    JwtUtil utils;
     @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+//    private RedisTemplate<String, Object> redisTemplate;
+//    暂时不用这个filter
+    private RedisTemplate<Object, Object> redisTemplate;
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,

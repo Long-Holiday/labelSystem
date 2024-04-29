@@ -16,7 +16,6 @@ import java.util.Collection;
 @Data
 public class LoginUser implements UserDetails {
     private SysUser sysUser;
-
     public LoginUser(SysUser sysUser) {
         this.sysUser = sysUser;
     }

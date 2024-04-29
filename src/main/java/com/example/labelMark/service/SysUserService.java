@@ -1,6 +1,9 @@
 package com.example.labelMark.service;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.example.labelMark.domain.Role;
 import com.example.labelMark.domain.SysUser;
 
 /**
@@ -19,4 +22,29 @@ public interface SysUserService extends IService<SysUser> {
      * @return
      */
     int createUser(SysUser user);
+
+    SysUser findByUsername(String username);
+
+    SysUser findByUserId(Integer userid);
+
+    boolean resetPassword(SysUser user);
+
+    long getUsersCountByAdmin(int isAdmin);
+
+    long getTotalCount();
+
+    /**
+     * 获取用户分页列表
+     *
+     * @param current
+     * @param pageSize
+     * @param userid
+     * @param username
+     * @return
+     */
+    Page<SysUser> getUsersPage(Integer current, Integer pageSize, Integer userid, String username);
+
+    boolean deleteUserById(Integer userid);
+
+    boolean updateUser(Integer userid, String username, Integer isadmin);
 }
