@@ -9,7 +9,7 @@
 
  Target Server Type    : MySQL
  Target Server Version : 80027
- File Encoding         : 65001
+ sysFile Encoding         : 65001
 
  Date: 03/12/2023 18:47:38
 */

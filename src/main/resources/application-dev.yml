@@ -28,6 +28,18 @@ spring:
     password: 123321         # Redis服务器密码（如果有的话）
     database: 0       # Redis数据库索引，默认是0
 
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+
+minio:
+  endpoint: http://127.0.0.1:9000 #Minio服务所在地址
+  bucketName: big-event #存储桶名称
+  accessKey: minioadmin #访问的key
+  secretKey: minioadmin #访问的秘钥
+
 knife4j:
   enable: true
 
