@@ -12,6 +12,7 @@ import com.example.labelMark.service.SysUserService;
 import com.example.labelMark.utils.ResultGenerator;
 import com.example.labelMark.vo.LoginUser;
 import com.example.labelMark.vo.constant.Result;
+import com.example.labelMark.vo.constant.StatusEnum;
 import io.swagger.annotations.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +42,7 @@ import java.util.Map;
 public class SysUserController {
 
     @Autowired
-    SysUserService sysUserService;
+    SysUserService SysUserService;
     @Autowired
     RoleService roleService;
     @Autowired
@@ -56,16 +58,16 @@ public class SysUserController {
     public Result register(@RequestBody Map<String, Object> map) {
         String username = ObjectUtil.toString(map.get("userName"));
         String password = ObjectUtil.toString(map.get("userPassword"));
-        SysUser user = sysUserService.findByUsername(username);
+        SysUser user = SysUserService.findByUsername(username);
         if (ObjectUtil.isNotNull(user)) {
             return ResultGenerator.getFailResult("用户已存在");
         }
-        SysUser sysUser = new SysUser();
-        sysUser.setUsername(username);
+        SysUser SysUser = new SysUser();
+        SysUser.setUsername(username);
 //        不为空，默认不是
-        sysUser.setIsadmin(0);
-        sysUser.setUserpassword(new BCryptPasswordEncoder().encode(password));
-        int isCreated = sysUserService.createUser(sysUser);
+        SysUser.setIsadmin(0);
+        SysUser.setUserpassword(new BCryptPasswordEncoder().encode(password));
+        int isCreated = SysUserService.createUser(SysUser);
         if (isCreated > 0) {
             return ResultGenerator.getSuccessResult("注册成功，账号：" + username);
         } else {
@@ -76,11 +78,10 @@ public class SysUserController {
     @ApiOperation("登录")
     @PostMapping(value = "/login")
 //   此参数待定，boolean isAutoLogin
-    public Result login(@RequestBody Map<String, Object> map) {
+    public Result login(@RequestBody Map<String, Object> map) throws InvocationTargetException {
         String username = ObjectUtil.toString(map.get("userName"));
         String password = ObjectUtil.toString(map.get("userPassword"));
-        ;
-        SysUser user = sysUserService.findByUsername(username);
+        SysUser user = SysUserService.findByUsername(username);
         if (ObjectUtil.isNotNull(user)) {
             //        密码改为明码，和数据库的加密密码比对
             user.setUserpassword(password);
@@ -92,10 +93,11 @@ public class SysUserController {
 
     @ApiOperation("密码重置")
     @RequestMapping(value = "/resetPassword", method = RequestMethod.POST)
-    public Result resetPassword(@RequestParam Integer userid) {
-        SysUser user = sysUserService.findByUserId(userid);
+    public Result resetPassword(@RequestBody Map<String, Object> map) {
+        Integer userid = Integer.valueOf(ObjectUtil.toString(map.get("userid")));
+        SysUser user = SysUserService.findByUserId(userid);
         if (ObjectUtil.isNotNull(user)) {
-            boolean reset = sysUserService.resetPassword(user);
+            boolean reset = SysUserService.resetPassword(user);
             if (reset) {
                 return ResultGenerator.getSuccessResult("密码重置成功，密码为：88888888");
             } else {
@@ -106,8 +108,8 @@ public class SysUserController {
     }
 
     @ApiOperation("获取用户分页列表")
-    @RequestMapping(value = "/getUsers", method = RequestMethod.POST)
-    public Result getUsers(@RequestParam(required = false) Integer userid
+    @RequestMapping(value = "/getUsers", method = RequestMethod.GET)
+    public Map getUsers(@RequestParam(required = false) Integer userid
             , @RequestParam(required = false) Integer isAdmin
             , @RequestParam Integer current
             , @RequestParam Integer pageSize
@@ -115,26 +117,32 @@ public class SysUserController {
         try {
             long total;
             if (isAdmin != null) {
-                total = sysUserService.getUsersCountByAdmin(isAdmin);
+                total = SysUserService.getUsersCountByAdmin(isAdmin);
             } else {
-                total = sysUserService.getTotalCount();
+                total = SysUserService.getTotalCount();
             }
-            Page<SysUser> usersPage = sysUserService.getUsersPage(current, pageSize, userid, username);
+            Page<SysUser> usersPage = SysUserService.getUsersPage(current, pageSize, userid, username, isAdmin);
             Map<String, Object> map = new HashMap<>();
+            map.put("code", StatusEnum.SUCCESS);
+            map.put("data", usersPage.getRecords());
             map.put("total", total);
-            map.put("usersPage", usersPage);
-            return ResultGenerator.getSuccessResult(map);
+            map.put("success", true);
+            return map;
         } catch (Exception e) {
-            return ResultGenerator.getFailResult("获取用户列表失败" + e.getMessage());
+            Map<String, Object> map = new HashMap<>();
+            map.put("code", StatusEnum.FAIL);
+            map.put("success", false);
+            map.put("message", e.getMessage());
+            return map;
         }
     }
 
     @ApiOperation("删除用户")
-    @RequestMapping(value = "/deleteUser", method = RequestMethod.POST)
-    public Result deleteUser(@RequestParam Integer userid) {
-        SysUser user = sysUserService.findByUserId(userid);
+    @RequestMapping(value = "/deleteUser/{userid}", method = RequestMethod.DELETE)
+    public Result deleteUser(@PathVariable Integer userid) {
+        SysUser user = SysUserService.findByUserId(userid);
         if (ObjectUtil.isNotNull(user)) {
-            boolean isRemove = sysUserService.deleteUserById(userid);
+            boolean isRemove = SysUserService.deleteUserById(userid);
             if (isRemove) {
                 return ResultGenerator.getSuccessResult("用户已删除");
             } else {
@@ -145,18 +153,23 @@ public class SysUserController {
     }
 
     @ApiOperation("获得所有角色")
-    @RequestMapping(value = "/getRoles", method = RequestMethod.POST)
+    @RequestMapping(value = "/getRoles", method = RequestMethod.GET)
     public Result getRoles() {
         List<Role> roles = roleService.getRoles();
         return ResultGenerator.getSuccessResult(roles);
     }
 
     @ApiOperation("更新用户信息")
-    @RequestMapping(value = "/updateUser", method = RequestMethod.POST)
-    public Result updateUser(@RequestParam Integer userid
-            , @RequestParam(required = false) String username, @RequestParam(required = false) Integer isadmin) {
+    @RequestMapping(value = "/updateUser", method = RequestMethod.PUT)
+    /*@RequestParam(value="userid") Integer userid
+            , @RequestParam(required = false) String username
+            , @RequestParam(required = false) String isadmin*/
+    public Result updateUser(@RequestBody Map<String, Object> map) {
+        String userid = ObjectUtil.toString(map.get("userid"));
+        String username = ObjectUtil.toString(map.get("username"));
+        String isadmin = ObjectUtil.toString(map.get("isadmin"));
         if (ObjectUtil.isNotNull(userid)) {
-            boolean iaUpdateUser = sysUserService.updateUser(userid, username, isadmin);
+            boolean iaUpdateUser = SysUserService.updateUser(Integer.valueOf(userid), username, Integer.valueOf(isadmin));
             if (iaUpdateUser) {
                 return ResultGenerator.getSuccessResult("用户信息更新成功");
             } else {
@@ -175,19 +188,19 @@ public class SysUserController {
         UserDetails principal = (UserDetails) authentication.getPrincipal();
         String username = principal.getUsername();
         String password = principal.getPassword();
-        SysUser user = sysUserService.findByUsername(username);
+        SysUser user = SysUserService.findByUsername(username);
         Map<String, Object> map = new HashMap<>();
         map.put("currentUser", "");
         map.put("isAdmin", 0);
         if (ObjectUtil.isNotNull(user)) {
-            map.put("currentUser", user);
+            map.put("currentUser", user.getUsername());
             map.put("isAdmin", user.getIsadmin());
         }
         return map;
     }
 
     @ApiOperation("登出")
-    @RequestMapping(value = "/logout", method = RequestMethod.POST)
+    @RequestMapping(value = "/outLogin", method = RequestMethod.POST)
     public Result logout() {
         Result result = loginService.logout();
         return result;

@@ -14,7 +14,7 @@ import springfox.documentation.oas.annotations.EnableOpenApi;
  * @Date 2024/4/15
  */
 
-@SpringBootApplication(exclude = {SecurityAutoConfiguration.class})
+@SpringBootApplication
 @EnableOpenApi
 @ServletComponentScan(basePackages = "com.example.labelMark")
 public class LabelMarkApplication {

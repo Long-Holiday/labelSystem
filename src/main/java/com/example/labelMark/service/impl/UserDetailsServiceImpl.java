@@ -19,11 +19,11 @@ import org.springframework.stereotype.Service;
 //public class UserDetailsServiceImpl{
 public class UserDetailsServiceImpl implements UserDetailsService {
     @Autowired
-    SysUserService sysUserService;
+    SysUserService SysUserService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        SysUser user = sysUserService.findByUsername(username);
+        SysUser user = SysUserService.findByUsername(username);
         if (ObjectUtil.isNotNull(user)) {
             return new LoginUser(user);
         } else {

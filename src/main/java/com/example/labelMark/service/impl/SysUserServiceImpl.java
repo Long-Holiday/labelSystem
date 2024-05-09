@@ -5,7 +5,8 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.labelMark.domain.sysUser;
+import com.example.labelMark.domain.SysUser;
+import com.example.labelMark.domain.SysUser;
 import com.example.labelMark.mapper.SysUserMapper;
 import com.example.labelMark.service.SysUserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,9 +22,9 @@ import org.springframework.stereotype.Service;
  * @since 2024-04-15
  */
 @Service
-public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, sysUser> implements SysUserService {
+public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
     @Autowired
-    private SysUserMapper sysUserMapper;
+    private SysUserMapper SysUserMapper;
 
     /**
      * 创建用户
@@ -32,8 +33,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, sysUser> impl
      * @return
      */
     @Override
-    public int createUser(sysUser user) {
-        return sysUserMapper.insert(user);
+    public int createUser(SysUser user) {
+        return SysUserMapper.insert(user);
     }
 
     @Override
@@ -74,17 +75,18 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, sysUser> impl
     }
 
     @Override
-    public Page<SysUser> getUsersPage(Integer current, Integer pageSize, Integer userid, String username) {
+    public Page<SysUser> getUsersPage(Integer current, Integer pageSize, Integer userid, String username, Integer isAdmin) {
         Page<SysUser> userPage = new Page<SysUser>().setCurrent(current).setSize(pageSize);
-        QueryWrapper<SysUser> sysUserQueryWrapper = new QueryWrapper<>();
+        QueryWrapper<SysUser> SysUserQueryWrapper = new QueryWrapper<>();
         if (ObjectUtil.isNotNull(userid)) {
-            sysUserQueryWrapper.eq("userid", userid);
+            SysUserQueryWrapper.eq("userid", userid);
         }
         if (StrUtil.isNotBlank(username)) {
-            sysUserQueryWrapper.eq("username", username);
+            SysUserQueryWrapper.eq("username", username);
         }
-        sysUserQueryWrapper.orderBy(true, true, "userid");
-        return page(userPage, sysUserQueryWrapper);
+        SysUserQueryWrapper.eq("isadmin", isAdmin);
+        SysUserQueryWrapper.orderBy(true, true, "userid");
+        return page(userPage, SysUserQueryWrapper);
     }
 
     @Override
@@ -95,15 +97,15 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, sysUser> impl
 
     @Override
     public boolean updateUser(Integer userid, String username, Integer isadmin) {
-        SysUser sysUser = new SysUser();
-        sysUser.setUserid(userid);
+        SysUser SysUser = new SysUser();
+        SysUser.setUserid(userid);
         if (ObjectUtil.isNotNull(isadmin)) {
-            sysUser.setIsadmin(isadmin);
+            SysUser.setIsadmin(isadmin);
         }
         if (StrUtil.isNotBlank(username)) {
-            sysUser.setUsername(username);
+            SysUser.setUsername(username);
         }
-        boolean isUpdate = updateById(sysUser);
+        boolean isUpdate = updateById(SysUser);
         return isUpdate;
     }
 }

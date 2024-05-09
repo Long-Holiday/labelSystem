@@ -6,6 +6,7 @@ import com.example.labelMark.filter.JwtFilter;
 //import com.example.labelMark.handle.LabelLogoutSuccessHandler;
 //import com.example.labelMark.handle.SuccessHandler;
 //import com.example.labelMark.handle.UsernamePasswordAuthenticationEntryPoint;
+import com.example.labelMark.service.impl.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,7 +33,7 @@ import java.util.Arrays;
  * @Date 2024/4/15
  */
 @Configuration
-//@EnableWebSecurity
+@EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private JwtFilter jwtFilter;
@@ -48,14 +49,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 //    LabelLogoutSuccessHandler labelLogoutSuccessHandler;
 
 
-
-/*    @Autowired
+    @Autowired
     private UserDetailsServiceImpl userDetailsService;
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(userDetailsService)// 设置自定义的userDetailsService
                 .passwordEncoder(passwordEncoder());
-    }*/
+    }
 
     @Override
     public void configure(WebSecurity web) throws Exception {
@@ -97,8 +97,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         "/favicon.ico",
                         "/v3/**"
                 ).permitAll() // 不拦截Swagger接口
-//                // 除上面外的所有请求全部需要鉴权认证
-//                .anyRequest().authenticated()
+                // 除上面外的所有请求全部需要鉴权认证
+                .anyRequest().authenticated()
                 .and()
                 .formLogin().disable(); // 禁用默认的表单登录
         //添加过滤器

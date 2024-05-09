@@ -18,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.HashMap;
 
@@ -34,7 +35,7 @@ public class LoginServiceImpl implements LoginService {
     private RedisCache redisCache;
 
     @Override
-    public Result login(SysUser user) {
+    public Result login(SysUser user) throws InvocationTargetException {
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getUsername(), user.getUserpassword());
         Authentication authenticate = authenticationManager.authenticate(authenticationToken);
         if (ObjectUtil.isNull(authenticate)) {
@@ -43,13 +44,14 @@ public class LoginServiceImpl implements LoginService {
         //使用userid生成token
         LoginUser loginUser = (LoginUser) authenticate.getPrincipal();
         String userId = loginUser.getSysUser().getUserid().toString();
-        //authenticate存入redis
-        redisCache.setCacheObject("login:" + userId, loginUser);
+        //authenticate存入redis,包括token
         String jwt = JwtUtil.createJWT(userId);
+        loginUser.setToken(jwt);
+        redisCache.setCacheObject("login:" + userId, loginUser);
         //把token响应给前端
         HashMap<String, Object> map = new HashMap<>();
         map.put("token", jwt);
-        map.put("expirationDate", DateUtil.offsetHour(new Date(), 5));
+//        map.put("expirationDate", DateUtil.offsetHour(new Date(), 5));
         return ResultGenerator.getSuccessResult(StatusEnum.SUCCESS, "登陆成功", map);
     }
 

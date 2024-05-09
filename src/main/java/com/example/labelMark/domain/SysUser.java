@@ -9,7 +9,6 @@ import java.io.Serializable;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -26,12 +25,12 @@ import lombok.Setter;
 @Setter
 @TableName("sys_user")
 @ApiModel(value = "User对象", description = "")
-public class sysUser implements Serializable {
+public class SysUser implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @ApiModelProperty("用户标识符")
-    @TableId(value = "userid", type = IdType.ASSIGN_ID)
+    @TableId(value = "userid", type = IdType.AUTO)
     private Integer userid;
 
     @TableField("username")

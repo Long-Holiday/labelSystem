@@ -1,7 +1,7 @@
 package com.example.labelMark.mapper;
 
-import com.example.labelMark.domain.SysUser;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.example.labelMark.domain.Role;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
@@ -10,10 +10,9 @@ import org.apache.ibatis.annotations.Mapper;
  * </p>
  *
  * @author wh
- * @since 2024-04-15
+ * @since 2024-04-12
  */
 @Mapper
-public interface SysUserMapper extends BaseMapper<SysUser> {
-    @Override
-    int insert(SysUser user);
+public interface RoleMapper extends BaseMapper<Role> {
+
 }

@@ -42,7 +42,7 @@ public interface SysUserService extends IService<SysUser> {
      * @param username
      * @return
      */
-    Page<SysUser> getUsersPage(Integer current, Integer pageSize, Integer userid, String username);
+    Page<SysUser> getUsersPage(Integer current, Integer pageSize, Integer userid, String username, Integer isAdmin);
 
     boolean deleteUserById(Integer userid);
 

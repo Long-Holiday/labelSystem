@@ -15,9 +15,11 @@ import java.util.Collection;
  */
 @Data
 public class LoginUser implements UserDetails {
-    private SysUser sysUser;
-    public LoginUser(SysUser sysUser) {
-        this.sysUser = sysUser;
+    private SysUser SysUser;
+    private String token;
+
+    public LoginUser(SysUser SysUser) {
+        this.SysUser = SysUser;
     }
 
     @Override
@@ -27,12 +29,12 @@ public class LoginUser implements UserDetails {
 
     @Override
     public String getPassword() {
-        return sysUser.getUserpassword();
+        return SysUser.getUserpassword();
     }
 
     @Override
     public String getUsername() {
-        return sysUser.getUsername();
+        return SysUser.getUsername();
     }
 
     @Override
