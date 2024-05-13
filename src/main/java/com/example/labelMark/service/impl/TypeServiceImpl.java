@@ -35,8 +35,8 @@ public class TypeServiceImpl extends ServiceImpl<TypeMapper, Type>
     }
 
     @Override
-    public void createType(Integer typeId, String typeName) {
-        typeMapper.createType(typeId, typeName);
+    public void createType(Integer typeId, String typeName, String typeColor) {
+        typeMapper.createType(typeId, typeName, typeColor);
     }
 
     @Override

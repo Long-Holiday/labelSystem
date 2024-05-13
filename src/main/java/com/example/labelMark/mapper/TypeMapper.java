@@ -3,8 +3,6 @@ package com.example.labelMark.mapper;
 import com.example.labelMark.domain.Type;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.*;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.util.List;
 
@@ -24,7 +22,7 @@ public interface TypeMapper extends BaseMapper<Type> {
              "AND type_id = #{typeId}",
              "</if>",
              "<if test='typeName != null'>",
-             "AND typename = #{typeName}",
+             "AND type_name like concat('%',#{typeName},'%')",
              "</if>",
              "</where>",
              "ORDER BY type_id ASC",
@@ -40,8 +38,8 @@ public interface TypeMapper extends BaseMapper<Type> {
      @Select("select type_id from type")
      List<Integer> getId();
 
-     @Insert("insert into type(type_id, type_name) values (#{typeId}, #{typeName})")
-     void createType(Integer typeId, String typeName);
+     @Insert("insert into type(type_id, type_name, type_color) values (#{typeId}, #{typeName}, #{typeColor})")
+     void createType(Integer typeId, String typeName, String typeColor);
 
      @Update("update type set type_name=#{typeName}, type_color=#{typeColor} where type_id=#{typeId}")
      void updateType(Type type);

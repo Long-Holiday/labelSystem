@@ -19,7 +19,7 @@ public interface TypeService extends IService<Type> {
 
     List<Integer> getId();
 
-    void createType(Integer typeId, String typeName);
+    void createType(Integer typeId, String typeName, String typeColor);
 
     void updateType(Type type);
 
