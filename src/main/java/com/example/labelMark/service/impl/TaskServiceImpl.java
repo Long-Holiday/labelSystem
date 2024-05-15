@@ -4,7 +4,6 @@ import com.example.labelMark.domain.Task;
 import com.example.labelMark.mapper.TaskMapper;
 import com.example.labelMark.service.TaskService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import io.swagger.models.auth.In;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -25,12 +24,7 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
     @Resource
     private TaskMapper taskMapper;
     @Override
-    public void createTask(String dataRange, String taskName, String taskType, String mapServer) {
-        Task task = new Task();
-        task.setDateRange(dataRange);
-        task.setTaskName(taskName);
-        task.setTaskType(taskType);
-        task.setMapServer(mapServer);
+    public void createTask(Task task) {
         taskMapper.insert(task);
     }
 
@@ -72,4 +66,32 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
     public void auditTask(int taskId, int status, String auditFeedback) {
         taskMapper.auditTask(taskId, status, auditFeedback);
     }
+
+    @Override
+    public  List<Map<String, Object>> findAllTask() {
+        System.out.println(231);
+        List<Map<String, Object>> taskDatasetInfos = taskMapper.findAllTask();
+        System.out.println(taskDatasetInfos);
+        return taskDatasetInfos;
+    }
+
+    @Override
+    public List<Map<String, Object>> findPublicTask() {
+        List<Map<String, Object>> taskDatasetInfos = taskMapper.findPublicTask();
+        return taskDatasetInfos;
+    }
+
+    @Override
+    public List<Map<String, Object>> findTasksByUsername(String username) {
+        List<Map<String, Object>> taskAccepted = taskMapper.findTasksByUsername(username);
+        return taskAccepted;
+    }
+
+    @Override
+    public List<String> findUserListByTaskId(int taskId) {
+        List<String> usernameList = taskMapper.findUserListByTaskId(taskId);
+        return usernameList;
+    }
+
+
 }

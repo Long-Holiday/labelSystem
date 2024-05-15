@@ -2,6 +2,7 @@ package com.example.labelMark.mapper;
 
 import com.example.labelMark.domain.Task;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.example.labelMark.domain.TaskDatasetInfo;
 import org.apache.ibatis.annotations.MapKey;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
@@ -39,4 +40,22 @@ public interface TaskMapper extends BaseMapper<Task> {
 
     @Update("UPDATE task SET status=#{status}, audit_feedback=#{auditFeedback} WHERE task_id = #{taskId}")
     void auditTask(int taskId, int status, String auditFeedback);
+
+    @Select("SELECT task.task_id " +
+            "FROM task " +
+            "JOIN dataset_store ON dataset_store.task_id = task.task_id")
+    List<Map<String, Object>> findAllTask();
+
+
+    @Select("SELECT task.task_id " +
+            "FROM task " +
+            "JOIN dataset_store ON dataset_store.task_id = task.task_id " +
+            "WHERE dataset_store.is_public = 1")
+    List<Map<String, Object>> findPublicTask();
+
+    @Select("SELECT task_id FROM task_accepted WHERE username=#{username}")
+    List<Map<String, Object>> findTasksByUsername(String username);
+
+    @Select("SELECT username FROM task_accepted WHERE task_id=#{taskId}")
+    List<String> findUserListByTaskId(int taskId);
 }
