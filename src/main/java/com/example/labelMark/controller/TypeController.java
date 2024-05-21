@@ -27,19 +27,19 @@ public class TypeController {
 
     @GetMapping("/getTypePage")
     @ApiOperation("获取类型")
-    public Map getTypePage(@RequestParam Integer current,
-                           @RequestParam Integer pageSize,
+    public Map getTypePage(@RequestParam(required = false) Integer current,
+                           @RequestParam(required = false) Integer pageSize,
                            @RequestParam(required = false) Integer typeId,
                            @RequestParam(required = false) String typeName) {
         try {
+//            无参时默认值
+            if (ObjectUtil.isEmpty(current)) {
+                current = 1;
+            }
+            if (ObjectUtil.isEmpty(pageSize)) {
+                pageSize = 5;
+            }
             List<Type> types = typeService.getTypes(current, pageSize, typeId, typeName);
-            // 是否需要获取types的数量？
-//            int total = 0;
-//            Integer typeId = type.getTypeId();
-//            String typeName = type.getTypeName();
-//            if (typeId != null || typeName != null) {
-//                total = types.size();
-//            }
             Map<String, Object> map = new HashMap<>();
             map.put("code", StatusEnum.SUCCESS);
             map.put("data", types);

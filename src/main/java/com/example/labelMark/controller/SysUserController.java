@@ -111,10 +111,17 @@ public class SysUserController {
     @RequestMapping(value = "/getUsers", method = RequestMethod.GET)
     public Map getUsers(@RequestParam(required = false) Integer userid
             , @RequestParam(required = false) Integer isAdmin
-            , @RequestParam Integer current
-            , @RequestParam Integer pageSize
+            , @RequestParam(required = false) Integer current
+            , @RequestParam(required = false) Integer pageSize
             , @RequestParam(required = false) String username) {
         try {
+            //            无参时默认值
+            if (ObjectUtil.isEmpty(current)) {
+                current = 1;
+            }
+            if (ObjectUtil.isEmpty(pageSize)) {
+                pageSize = 5;
+            }
             long total;
             if (isAdmin != null) {
                 total = SysUserService.getUsersCountByAdmin(isAdmin);
@@ -161,9 +168,6 @@ public class SysUserController {
 
     @ApiOperation("更新用户信息")
     @RequestMapping(value = "/updateUser", method = RequestMethod.PUT)
-    /*@RequestParam(value="userid") Integer userid
-            , @RequestParam(required = false) String username
-            , @RequestParam(required = false) String isadmin*/
     public Result updateUser(@RequestBody Map<String, Object> map) {
         String userid = ObjectUtil.toString(map.get("userid"));
         String username = ObjectUtil.toString(map.get("username"));

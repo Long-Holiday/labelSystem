@@ -24,7 +24,7 @@ public interface sysFileMapper extends BaseMapper<sysFile> {
     @Select({
             "<script>",
             "SELECT * FROM file",
-            "ORDER BY file_id=#{fileId} DESC",
+            "ORDER BY file_id DESC",
             "LIMIT #{pageSize} OFFSET #{offset}",
             "</script>"
     })

@@ -23,13 +23,14 @@ public class TaskAcceptedServiceImpl extends ServiceImpl<TaskAcceptedMapper, Tas
     private TaskAcceptedMapper taskAcceptedMapper;
 
     @Override
-    public void createTaskAccept(Integer taskId, String username, String typeArr) {
-//        TaskAccepted taskAccepted = new TaskAccepted();
-//        taskAccepted.setTaskId(taskId);
-//        taskAccepted.setUsername(username);
-//        taskAccepted.setTypeArr(typeArr);
-        taskAcceptedMapper.createTaskAccept(taskId, username, typeArr);
-
+    public boolean createTaskAccept(Integer taskId, String username, String typeArr) {
+        TaskAccepted taskAccepted = new TaskAccepted();
+        taskAccepted.setTaskId(taskId);
+        taskAccepted.setUsername(username);
+        taskAccepted.setTypeArr(typeArr);
+        boolean isSave = save(taskAccepted);
+//        taskAcceptedMapper.createTaskAccept(taskId, username, typeArr);
+        return isSave;
     }
 
     @Override

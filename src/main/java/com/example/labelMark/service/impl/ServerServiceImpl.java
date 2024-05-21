@@ -32,10 +32,11 @@ public class ServerServiceImpl extends ServiceImpl<ServerMapper, Server> impleme
     }
 
     @Override
-    public void deleteServerByName(String serName) {
+    public int deleteServerByName(String serName) {
         QueryWrapper<Server> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("ser_name", serName);
-        serverMapper.delete(queryWrapper);
+        int delete = serverMapper.delete(queryWrapper);
+        return delete;
     }
 
     @Override

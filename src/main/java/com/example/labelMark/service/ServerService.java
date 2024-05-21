@@ -19,7 +19,7 @@ public interface ServerService extends IService<Server> {
 
     List<Server> getServers();
 
-    void deleteServerByName(String serName);
+    int deleteServerByName(String serName);
 
     void createServer(Server server);
 }

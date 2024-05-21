@@ -1,21 +1,26 @@
 package com.example.labelMark.controller;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.example.labelMark.domain.sysFile;
 import com.example.labelMark.service.sysFileService;
 import com.example.labelMark.utils.ResultGenerator;
 import com.example.labelMark.vo.constant.Result;
+import com.example.labelMark.vo.constant.StatusEnum;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.io.FileUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -27,7 +32,7 @@ import java.util.List;
  * @since 2024-04-18
  */
 @RestController
-@RequestMapping("/file")
+@RequestMapping("/files")
 public class sysFileController {
 
     @Resource
@@ -60,20 +65,20 @@ public class sysFileController {
 
     }
 
-//    @PostMapping ("/mergeTif")
-//    public Result mergeTif(MultipartFile file){
-//        String[] fileNameArr = file.getOriginalFilename().split("\\.");
-//        String chunkDir = Paths.get(TEMP_DIR, fileNameArr[0]).toString();
-//        try {
-//            List<BufferedImage> images = loadImages(chunkDir);
-//            BufferedImage mergedImage = mergeImages(images);
-////            saveMergedImage(mergedImage, Paths.get(TEMP_DIR, "merged.jpg").toString());
-//            file.transferTo(Paths.get(UPLOAD_DIR, String.valueOf(mergedImage)).toFile());
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        return ResultGenerator.getSuccessResult();
-//    }
+    /*    @PostMapping ("/mergeTif")
+        public Result mergeTif(MultipartFile file){
+            String[] fileNameArr = file.getOriginalFilename().split("\\.");
+            String chunkDir = Paths.get(TEMP_DIR, fileNameArr[0]).toString();
+            try {
+                List<BufferedImage> images = loadImages(chunkDir);
+                BufferedImage mergedImage = mergeImages(images);
+    //            saveMergedImage(mergedImage, Paths.get(TEMP_DIR, "merged.jpg").toString());
+                file.transferTo(Paths.get(UPLOAD_DIR, String.valueOf(mergedImage)).toFile());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return ResultGenerator.getSuccessResult();
+        }*/
     @PostMapping("/upload")
     public Result upload(@RequestParam("file") MultipartFile file,
                                          @RequestParam("fileName") String fileName,
@@ -106,16 +111,30 @@ public class sysFileController {
 
     @GetMapping("/getAllFiles")
     @ApiOperation("")
-    public Result getAllFiles(Integer current,
-                          Integer pageSize,
-                          @RequestParam(required = false)Integer fileId) {
+    public Map getAllFiles(Integer current,
+                           Integer pageSize,
+                           @RequestParam(required = false) Integer fileId) {
         try {
+            //            无参时默认值
+            if (ObjectUtil.isEmpty(current)) {
+                current = 1;
+            }
+            if (ObjectUtil.isEmpty(pageSize)) {
+                pageSize = 5;
+            }
             List<sysFile> sysfiles = sysfileService.getAllFiles(current, pageSize, fileId);
-            // 还需返回文件总数
-            return ResultGenerator.getSuccessResult(sysfiles);
+            Map<String, Object> map = new HashMap<>();
+            map.put("code", StatusEnum.SUCCESS);
+            map.put("data", sysfiles);
+            map.put("total", sysfiles.size());
+            map.put("success", true);
+            return map;
         } catch (Exception e) {
-            System.out.println("获取文件失败: " + e.getMessage());
-            return ResultGenerator.getFailResult("获取文件失败");
+            Map<String, Object> map = new HashMap<>();
+            map.put("code", StatusEnum.FAIL);
+            map.put("success", false);
+            map.put("message", e.getMessage());
+            return map;
         }
     }
 

@@ -50,18 +50,21 @@ public class ServerController {
     private GeoServerRESTClient geoServerRESTClient;
 
     @GetMapping("/getServers")
-    public Result getServers(){
+    public Result getServers() {
         List<Server> servers = serverService.getServers();
         return ResultGenerator.getSuccessResult(servers);
     }
 
-    @PutMapping("/deleteServer")
-    public Result deleteServerByName(String serName){
+    @DeleteMapping("/deleteServer/{serName}")
+    public Result deleteServerByName(@PathVariable String serName) {
         try {
-            serverService.deleteServerByName(serName);
+            int isDelete = serverService.deleteServerByName(serName);
+            if (isDelete < 0) {
+                return ResultGenerator.getFailResult("删除失败");
+            }
             return ResultGenerator.getSuccessResult("删除成功");
-        }catch (Exception e){
-            return ResultGenerator.getFailResult("删除失败"+ e.getMessage());
+        } catch (Exception e) {
+            return ResultGenerator.getFailResult("删除失败" + e.getMessage());
         }
     }
 

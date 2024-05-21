@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 @Service
 public interface TaskAcceptedService extends IService<TaskAccepted> {
 
-    void createTaskAccept(Integer taskId, String username, String typeArr);
+    boolean createTaskAccept(Integer taskId, String username, String typeArr);
 
     void deleteTaskAcceptById(int id);
 }
