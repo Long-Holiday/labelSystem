@@ -84,8 +84,8 @@ public class TaskController {
 
     @GetMapping("/selectTaskById")
     public Result selectTaskById(int taskId){
-        Task task = taskService.selectTaskById(taskId);
-        return ResultGenerator.getSuccessResult(task);
+        List<Task> tasks = taskService.selectTaskById(taskId);
+        return ResultGenerator.getSuccessResult(tasks);
     }
 
     @PutMapping("/updateTaskStatus")
@@ -183,10 +183,13 @@ public class TaskController {
 
     @GetMapping("/taskId")
     public Result submitTask(int taskId){
-        Task task = taskService.selectTaskById(taskId);
-        if(task.getMarkTable() == null){
-            return ResultGenerator.getFailResult("未开始标注");
+        List<Task> tasks = taskService.selectTaskById(taskId);
+        for(Task task : tasks){
+            if(task.getMarkTable() == null){
+                return ResultGenerator.getFailResult("未开始标注");
+            }
         }
+
         taskService.updateTaskStatus(taskId);
         return ResultGenerator.getSuccessResult("任务提交成功，审核中");
     }

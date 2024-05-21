@@ -3,11 +3,9 @@ package com.example.labelMark.mapper;
 import com.example.labelMark.domain.DatasetStore;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.example.labelMark.domain.ImageInfo;
-import com.example.labelMark.domain.TaskDatasetInfo;
 import org.apache.ibatis.annotations.*;
 import org.springframework.data.repository.query.Param;
 
-import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 
@@ -54,6 +52,10 @@ public interface DatasetStoreMapper extends BaseMapper<DatasetStore> {
     @Update("update dataset_store SET is_public=#{isPublic} WHERE sample_id=#{sampleId}")
     void updateDatasetStatusBySampleId(int isPublic, int sampleId);
 
-    @Select("select task_id from dataset_store where task_id=#{taskId}")
+    @Select("select COUNT(*) as count from dataset_store where task_id=#{taskId}")
     Integer hasGenerateDataset(int taskId);
+
+    @Insert("INSERT INTO dataset_store (task_id, is_public) VALUES (#{taskId}, #{isPublic})")
+    @Options(useGeneratedKeys = true, keyProperty = "sampleId", keyColumn = "sample_id")
+    void createDataset(DatasetStore datasetStore);
 }

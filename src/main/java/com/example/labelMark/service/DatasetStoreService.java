@@ -20,7 +20,7 @@ import java.util.Map;
 @Service
 public interface DatasetStoreService extends IService<DatasetStore> {
 
-    void createDataset(DatasetStore datasetStore);
+    Integer createDataset(int taskId);
 
     List<Map<String, Object>> findDatasetByTaskId(int taskId);
 

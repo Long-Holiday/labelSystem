@@ -28,4 +28,6 @@ public interface TypeService extends IService<Type> {
     Type getTypeById(Integer typeId);
 
     String getTypeNameById(Integer typeId);
+
+    String getColorById(Integer typeId);
 }

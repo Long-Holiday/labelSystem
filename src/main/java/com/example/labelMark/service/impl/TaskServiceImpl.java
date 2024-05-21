@@ -52,9 +52,9 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
     }
 
     @Override
-    public Task selectTaskById(int taskId) {
-        Task task = taskMapper.selectTaskById(taskId);
-        return task;
+    public List<Task> selectTaskById(int taskId) {
+        List<Task> tasks = taskMapper.selectTaskById(taskId);
+        return tasks;
     }
 
     @Override
@@ -91,6 +91,23 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
     public List<String> findUserListByTaskId(int taskId) {
         List<String> usernameList = taskMapper.findUserListByTaskId(taskId);
         return usernameList;
+    }
+
+    @Override
+    public void updateTask(int taskId, int Id) {
+        taskMapper.updateTask(taskId, Id);
+    }
+
+    @Override
+    public String getServerById(int taskId) {
+        String serverName = taskMapper.getServerById(taskId);
+        return serverName;
+    }
+
+    @Override
+    public String getTypeById(int taskId) {
+        String taskType = taskMapper.getTypeById(taskId);
+        return taskType;
     }
 
 

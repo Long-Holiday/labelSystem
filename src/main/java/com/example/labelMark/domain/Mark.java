@@ -51,9 +51,8 @@ public class Mark implements Serializable {
     @TableField("status")
     private Integer status;
 
-    @TableField("mark_name")
-    @Pattern(regexp = "^mark_\\d+$", message = "markName格式不正确，应为mark_加数字")
-    private String markName;
+    @TableField("mark_id")
+    private String markId;
 
 
 }

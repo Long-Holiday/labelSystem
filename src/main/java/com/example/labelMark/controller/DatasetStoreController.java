@@ -3,19 +3,30 @@ package com.example.labelMark.controller;
 import com.example.labelMark.domain.DatasetStore;
 import com.example.labelMark.domain.ImageInfo;
 import com.example.labelMark.domain.Task;
-import com.example.labelMark.domain.TaskDatasetInfo;
+
 import com.example.labelMark.service.DatasetStoreService;
 import com.example.labelMark.service.TaskService;
-import com.example.labelMark.utils.ResultGenerator;
+import com.example.labelMark.service.TypeService;
+import com.example.labelMark.utils.*;
 import com.example.labelMark.vo.constant.Result;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
+import org.json.JSONObject;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import javax.swing.event.ListDataEvent;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * <p>
@@ -35,16 +46,13 @@ public class DatasetStoreController {
     @Resource
     private TaskService taskService;
 
-    // isPublic设置默认值为0？
-    @PostMapping("getDataset")
-    public Result getDataset(int taskId, int isPublic){
-        DatasetStore datasetStore = new DatasetStore();
-        datasetStore.setTaskId(taskId);
-        datasetStore.setIsPublic(isPublic);
-        datasetStoreService.createDataset(datasetStore);
-        int sampleId = datasetStore.getSampleId();
-        return ResultGenerator.getSuccessResult(sampleId);
-    }
+    @Resource
+    private TypeService typeService;
+
+    @Resource
+    private GeoServerRESTClient geoServerRESTClient;
+
+
 
     @GetMapping("/getTotalImgNumBySampleId")
     public Result getTotalImgNumBySampleId(int sampleId){
@@ -124,20 +132,288 @@ public class DatasetStoreController {
         return ResultGenerator.getSuccessResult();
     }
 
-//    @GetMapping("/generateDataset")
-//    private Result generateDataset(int taskId){
-//
-//        Integer idExist = datasetStoreService.hasGenerateDataset(taskId);
-//
-//        if(idExist != null){
-//            System.out.println("该样本已存在");
-//            return ResultGenerator.getSuccessResult("该样本已存在");
+    @GetMapping("/deleteDataset")
+    public Result deleteDataset(int sampleId, int taskId){
+        datasetStoreService.deleteDatastoreById(sampleId);
+        String markTaskId = "mark_" + taskId;
+        Path DOWNLOAD_DIR = Paths.get(System.getProperty("user.dir"), "../public/dataset_temp/",markTaskId);
+        Path OUTPUT_DIR = Paths.get(System.getProperty("user.dir"), "../public/dataset/COCO_" + taskId);
+
+        try {
+            // 删除 DOWNLOAD_DIR
+            deleteDirectoryRecursively(DOWNLOAD_DIR);
+            // 删除 OUTPUT_DIR
+            deleteDirectoryRecursively(OUTPUT_DIR);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResultGenerator.getFailResult("Failed to delete directories");
+        }
+
+        return ResultGenerator.getSuccessResult("Directories deleted successfully");
+    }
+
+    private void deleteDirectoryRecursively(Path directory) throws IOException {
+        if (Files.exists(directory)) {
+            Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    Files.delete(file);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    Files.delete(dir);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
+    }
+
+
+    @GetMapping("/downloadDataset")
+    public Result downloadDataset(int taskId){
+
+        Path outputDir = Paths.get(System.getProperty("user.dir"), "../public/dataset/COCO_" + taskId);
+
+        // 检查文件读取目录是否存在
+        if (!Files.exists(outputDir)) {
+            return ResultGenerator.getFailResult("指定的目录不存在: " + outputDir);
+        }
+
+        try {
+            // 创建压缩文件的路径
+            Path zipPath = Paths.get(System.getProperty("user.dir"), "COCO.zip");
+            createDirectory(zipPath, "创建COCO.zip文件路径");
+            // 计算输出路径
+//            Path outputPath = Paths.get(outputDir, "COCO_" + taskId);
+
+            // 创建压缩包
+            try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipPath))) {
+                // 读取输出路径下的所有文件和子文件夹
+                Files.walk(outputDir).filter(path -> !Files.isDirectory(path)).forEach(path -> {
+                    ZipEntry zipEntry = new ZipEntry(outputDir.relativize(path).toString());
+                    try {
+                        zos.putNextEntry(zipEntry);
+                        Files.copy(path, zos);
+                        zos.closeEntry();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+            }
+
+            // 读取压缩文件到字节数组
+            byte[] zipContent = Files.readAllBytes(zipPath);
+
+            // 删除压缩文件
+            Files.delete(zipPath);
+
+            // 设置响应头
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-Disposition", "attachment; filename=files.zip");
+            headers.add("Content-Type", "application/zip");
+
+            // 返回压缩文件的字节数组
+            return ResultGenerator.getSuccessResult(zipContent);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResultGenerator.getFailResult(e.getMessage());
+        }
+
+    }
+
+    @GetMapping("/generateDataset")
+    public Result generateDataset(int taskId) throws IOException {
+
+        Integer idExist = datasetStoreService.hasGenerateDataset(taskId);
+
+        while (idExist != null){
+            System.out.println("该样本已存在");
+            return ResultGenerator.getSuccessResult("该样本已存在");
+        }
+
+        List<Task> tasks = taskService.selectTaskById(taskId);
+
+        int sampleId = datasetStoreService.createDataset(taskId);
+
+        String markTaskId = "mark_" + taskId;
+        Path downloadDir = Paths.get(System.getProperty("user.dir"), "../public/dataset_temp/", markTaskId);
+        Path outputDir = Paths.get(System.getProperty("user.dir"), "../public/dataset/COCO_" + taskId);
+        Path outputDirImage = Paths.get(System.getProperty("user.dir"), "../public/dataset/COCO_" + taskId + "/images");
+        Path outputDirAnnotations = Paths.get(System.getProperty("user.dir"), "../public/dataset/COCO_" + taskId + "/annotations");
+
+        createDirectoryIfNotExists(downloadDir);
+        createDirectory(outputDir, "创建coco文件夹");
+        createDirectory(outputDirImage, "创建coco/images文件夹");
+        createDirectory(outputDirAnnotations, "创建coco/annotations文件夹");
+
+        String jsonStr = geoServerRESTClient.GeoServerString(taskService.getServerById(taskId));
+        // 创建一个JSONObject来解析JSON字符串
+        JSONObject jsonObj = new JSONObject(jsonStr);
+        // 从JSONObject中提取图层信息
+        JSONObject featureType = jsonObj.getJSONObject("featureType");
+        // 提取图层的空间参考系统（SRS）
+        String srs = featureType.getString("srs");
+        // 从图层信息中提取边界框（nativeBoundingBox）
+        JSONObject boundingBox = featureType.getJSONObject("nativeBoundingBox");
+
+        // 提取minx、maxx、miny和maxy的值
+        double minx = boundingBox.getDouble("minx");
+        double maxx = boundingBox.getDouble("maxx");
+        double miny = boundingBox.getDouble("miny");
+        double maxy = boundingBox.getDouble("maxy");
+
+        double height = 2048;
+        double width = Math.ceil(((maxx - minx) / (maxy - miny)) * height);
+        String bbox = String.format("%f,%f,%f,%f", minx, maxx, miny, maxy);
+
+
+        Map<String, Object> images = new HashMap<>();
+        images.put("file_name", "train_1.jpeg");
+        images.put("id", 1);
+        images.put("width", width);
+        images.put("height", height);
+
+        ResponseEntity<byte[]> result = GeoServerController.getGeoserverImg(
+                taskService.getServerById(taskId),
+                width,
+                height,
+                bbox,
+                srs
+                );
+
+        // 区分样本集类型并确定文件路径
+        Path filePath = Paths.get(String.valueOf(outputDirImage), "train_1.jpeg");
+//        if(Objects.equals(taskService.getTypeById(taskId), "地物分类")){
+//            filePath = Paths.get(String.valueOf(outputDirImage), "val_1.jpeg");
 //        }else {
-//            Task task = taskService.selectTaskById(taskId);
+//            filePath = Paths.get(String.valueOf(outputDirImage), "train_1.jpeg");
+//        }
+
+        // 将响应流中的数据写入文件
+        try (FileOutputStream fos = new FileOutputStream(String.valueOf(filePath))) {
+            fos.write(Objects.requireNonNull(result.getBody()));
+        }
+
+        createDirectory(outputDirAnnotations, "创建coco/annotations文件夹");
+
+        Map<String, Double> tifParams = null;
+        tifParams.put("minx", Math.abs(minx));
+        tifParams.put("maxy", Math.abs(maxy));
+        tifParams.put("serverHeight", Math.abs(maxy) - Math.abs(miny));
+        tifParams.put("serverWidth", Math.abs(maxx) - Math.abs(minx));
+        Map<String, Double> dimensions = null;
+        dimensions.put("width", width);
+        dimensions.put("height", height);
+
+        List<Map<String, Object>> categories = new ArrayList<>();
+        List<Map<String, Object>> annotations = new ArrayList<>();
+
+        // 将tasks集合转为Map集合
+        List<Map<String, Object>> task = DomainToMapList.convertDomainListToMapList(tasks);
+        List<Map<String, Object>> segmentationArr = CovertCoordinateToPixel.covertCoordinateToPixel(task, tifParams, dimensions);
+
+
+//        if(Objects.equals(taskService.getTypeById(taskId), "地物分类")){
+//            GenerateStuffImg.generateStuffImg((int) Math.round(width), (int) Math.round(height), segmentationArr, filePath.toString());
 //
 //        }
-//
-//
-//    }
+        GenerateStuffImg.generateStuffImg((int) Math.round(width), (int) Math.round(height), segmentationArr, filePath.toString());
+
+        int i;
+        for(i=0; i<segmentationArr.size(); i++){
+            String geom = (String) segmentationArr.get(i).get("geom");
+//            Integer taskId = (Integer) segmentationArr.get(i).get("task_id");
+            Integer userId = (Integer) segmentationArr.get(i).get("user_id");
+            Integer typeId = (Integer) segmentationArr.get(i).get("type_id");
+            String typeColor = (String) segmentationArr.get(i).get("typeColor");
+            List<Double> segmentation = (List<Double>) segmentationArr.get(i).get("segmentation");
+            Double[] bbox1 = (Double[]) segmentationArr.get(i).get("bbox");
+            String geoBbox = (String) segmentationArr.get(i).get("geoBbox");
+
+
+            // 检查 `categories` 列表中是否已有 `typeId`
+            boolean typeExists = categories.stream().anyMatch(cat -> (int) cat.get("id") == typeId);
+            if (!typeExists) {
+                String typeName = typeService.getTypeNameById(typeId);
+                System.out.println(typeId + " " + typeName);
+
+                Map<String, Object> category = new HashMap<>();
+                category.put("name", typeName);
+                category.put("id", typeId);
+                category.put("color", typeColor);
+                categories.add(category);
+            }
+
+            Map<String, Object> annotation = new HashMap<>();
+            annotation.put("category_id", typeId);
+            annotation.put("img_id", 1);
+            annotation.put("bbox", bbox1);
+            annotation.put("segmentation", segmentation);
+            annotations.add(annotation);
+
+            GeoServerController.getGeoserverImg(taskService.getServerById(taskId), 256, 256, geoBbox, "EPSG:3857");
+
+            Path localFilePath = Paths.get(String.valueOf(downloadDir), markTaskId);
+            // 将响应流中的数据写入文件
+            try (FileOutputStream fos = new FileOutputStream(String.valueOf(localFilePath))) {
+                fos.write(Objects.requireNonNull(result.getBody()));
+            }
+
+            datasetStoreService.insertSampleImgInfo(sampleId, typeId, localFilePath.toString());
+
+            System.out.println("图片" + sampleId + "生成成功！");
+        }
+
+        Map<String, Object> json = new HashMap<>();
+        json.put("images", images);
+        json.put("annotations", annotations);
+        json.put("categories", categories);
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.enable(SerializationFeature.INDENT_OUTPUT); // For pretty print
+//        String jsonString = mapper.writeValueAsString(json);
+        try {
+
+            // 确保目录存在，如果不存在则创建目录
+            File outputDirFile  = outputDirAnnotations.toFile();
+            if (!outputDirFile.exists()) {
+                outputDirFile.mkdirs();
+            }
+
+            // 定义输出文件路径
+            File outputFile = new File(outputDirFile, "annotations.json");
+
+            // 将 JSON 写入文件
+            mapper.writeValue(outputFile, json);
+            System.out.println("JSON 文件生成成功！");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return ResultGenerator.getSuccessResult("样本生成成功");
+    }
+
+
+    private static void createDirectoryIfNotExists(Path path) {
+        if (Files.notExists(path)) {
+            try {
+                Files.createDirectories(path);
+                System.out.println("Created directory: " + path.toString());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static void createDirectory(Path path, String message) {
+        try {
+            Files.createDirectories(path);
+            System.out.println(message);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 }

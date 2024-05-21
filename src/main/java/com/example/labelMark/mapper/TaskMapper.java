@@ -33,7 +33,7 @@ public interface TaskMapper extends BaseMapper<Task> {
     void updateTaskById(int taskId, String taskName, String dataRange, String taskType, String mapServer);
 
     @Select("SELECT * FROM task WHERE task_id = #{taskId}")
-    Task selectTaskById(int taskId);
+    List<Task> selectTaskById(int taskId);
 
     @Update("UPDATE task SET status=0 WHERE task_id = #{taskId}")
     void updateTaskStatus(int taskId);
@@ -58,4 +58,13 @@ public interface TaskMapper extends BaseMapper<Task> {
 
     @Select("SELECT username FROM task_accepted WHERE task_id=#{taskId}")
     List<String> findUserListByTaskId(int taskId);
+
+    @Update("UPDATE task SET mark_id=#{id} WHERE task_id={taskId}")
+    void updateTask(int taskId, int id);
+
+    @Select("select map_server FROM task where task_id=#{taskId}")
+    String getServerById(int taskId);
+
+    @Select("select task_type FROM task where task_id=#{taskId}")
+    String getTypeById(int taskId);
 }

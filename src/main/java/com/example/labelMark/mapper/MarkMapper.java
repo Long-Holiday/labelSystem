@@ -15,18 +15,18 @@ import org.apache.ibatis.annotations.*;
 @Mapper
 public interface MarkMapper extends BaseMapper<Mark> {
 
-    @Select("SELECT COUNT(*) FROM mark WHERE task_id=#{taskId}}")
-    int isMark(int taskId);
+    @Delete("DELETE FROM mark WHERE task_id=#{taskId} AND user_id=#{userId} AND type_id=#{typeId} AND type_id=#{typeId}")
+    void deleteMark(int taskId, int userId, int typeId);
 
+    @Insert("INSERT INTO mark(task_id, user_id, type_id, geom) values (#{taskId}, #{userId}, #{typeId},#{geom})")
+    Mark createMark(int taskId, int userId, int typeId, String geom);
 
-    @Delete("DELETE FROM mark where mark_name=#{markName}")
-    void deleteMarkByName(String markName);
+    @Select("SELECT COUNT(*) FROM mark WHERE task_id=#{taskId} AND user_id=#{userId}")
+    int isMark(int taskId, int userId);
 
-    @Delete("DELETE FROM mark WHERE task_id=#{taskId} AND type_id=#{typeId}")
-    void deleteMark(int taskId, int typeId);
-
-    @Insert("INSERT INTO mark(task_id, type_id, geom) values (#{taskId},#{typeId},#{geom})")
-    Mark createMark(int taskId, int typeId, String geom);
+    @Insert("INSERT INTO mark values (#{mark})")
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    void insertMark(Mark mark);
 
 //    @Insert()
 //    void createMark(String markName);

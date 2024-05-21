@@ -53,6 +53,8 @@ public interface TypeMapper extends BaseMapper<Type> {
      @Select("SELECT type_name FROM type WHERE type_id = #{typeId}")
      String getTypeNameById(Integer typeId);
 
+     @Select("SELECT type_color FROM type WHERE type_id = #{typeId}")
+     String getColorById(Integer typeId);
 }
 
 

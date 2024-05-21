@@ -32,8 +32,13 @@ public class DatasetStoreServiceImpl extends ServiceImpl<DatasetStoreMapper, Dat
     private SampleImgMapper sampleImgMapper;
 
     @Override
-    public void createDataset(DatasetStore datasetStore) {
-        datasetStoreMapper.insert(datasetStore);
+    public Integer createDataset(int taskId) {
+        DatasetStore datasetStore = new DatasetStore();
+        datasetStore.setTaskId(taskId);
+        datasetStore.setIsPublic(0);
+        datasetStoreMapper.createDataset(datasetStore);
+        int sampleId = datasetStore.getSampleId();
+        return sampleId;
     }
 
     @Override

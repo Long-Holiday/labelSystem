@@ -60,6 +60,12 @@ public class TypeServiceImpl extends ServiceImpl<TypeMapper, Type>
         String name = typeMapper.getTypeNameById(typeId);
         return name;
     }
+
+    @Override
+    public String getColorById(Integer typeId) {
+        String typeColor = typeMapper.getColorById(typeId);
+        return typeColor;
+    }
 }
 
 

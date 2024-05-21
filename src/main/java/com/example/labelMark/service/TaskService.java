@@ -28,7 +28,7 @@ public interface TaskService extends IService<Task> {
 
     void deleteTaskById(int taskId);
 
-    Task selectTaskById(int taskId);
+    List<Task> selectTaskById(int taskId);
 
     void updateTaskStatus(int taskId);
 
@@ -41,4 +41,10 @@ public interface TaskService extends IService<Task> {
     List<Map<String, Object>> findTasksByUsername(String username);
 
     List<String> findUserListByTaskId(int taskId);
+
+    void updateTask(int taskId, int Id);
+
+    String getServerById(int taskId);
+
+    String getTypeById(int taskId);
 }

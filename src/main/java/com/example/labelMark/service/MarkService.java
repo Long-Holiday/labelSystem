@@ -15,15 +15,16 @@ import java.util.List;
  */
 public interface MarkService extends IService<Mark> {
 
-    boolean isMark(int taskId);
+    boolean isMark(int taskId, int userId);
 
-    void createMark(int taskId, int typeId, String geom);
+    void createMark(int taskId, int userId, int typeId, String geom);
 
 //    List<String> getMarkInfoArr()
 
-    void deleteMarkByName(String markName);
+//    void deleteMarkByName(String markName);
 
-    void deleteMark(int taskId, int typeId);
+    void deleteMark(int taskId, int userId, int typeId);
 
+    void insertMark(Mark mark);
 
 }

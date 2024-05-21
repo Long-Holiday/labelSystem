@@ -22,8 +22,8 @@ public class MarkServiceImpl extends ServiceImpl<MarkMapper, Mark> implements Ma
     private MarkMapper markMapper;
 
     @Override
-    public boolean isMark(int taskId) {
-        int count = markMapper.isMark(taskId);
+    public boolean isMark(int taskId, int userId) {
+        int count = markMapper.isMark(taskId, userId);
         if(count != 0){
             return true;
         }else {
@@ -32,19 +32,22 @@ public class MarkServiceImpl extends ServiceImpl<MarkMapper, Mark> implements Ma
     }
 
     @Override
-    public void createMark(int taskId, int typeId, String geom) {
-        markMapper.createMark(taskId, typeId, geom);
+    public void createMark(int taskId, int userId, int typeId, String geom) {
+        markMapper.createMark(taskId, userId, typeId, geom);
     }
 
     @Override
-    public void deleteMarkByName(String markName) {
-        markMapper.deleteMarkByName(markName);
+    public void deleteMark(int taskId, int userId,int typeId) {
+        markMapper.deleteMark(taskId, userId, typeId);
     }
 
-
     @Override
-    public void deleteMark(int taskId, int typeId) {
-        markMapper.deleteMark(taskId, typeId);
+    public void insertMark(Mark mark) {
+//        Mark mark = new Mark();
+//        mark.setTaskId(taskId);
+//        mark.setUserId(userId);
+//        mark.setGeom(geom);
+        markMapper.insertMark(mark);
     }
 
 //    @Override
