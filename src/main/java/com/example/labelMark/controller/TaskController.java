@@ -1,11 +1,15 @@
 package com.example.labelMark.controller;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.example.labelMark.domain.Task;
 import com.example.labelMark.domain.TaskDatasetInfo;
+import com.example.labelMark.domain.Type;
 import com.example.labelMark.service.MarkService;
 import com.example.labelMark.service.TaskAcceptedService;
 import com.example.labelMark.service.TaskService;
+import com.example.labelMark.service.TypeService;
 import com.example.labelMark.utils.ResultGenerator;
+import com.example.labelMark.vo.TaskInfoDTO;
 import com.example.labelMark.vo.constant.Result;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -14,10 +18,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.validation.constraints.Pattern;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -34,6 +36,8 @@ public class TaskController {
 
     @Resource
     private TaskService taskService;
+    @Resource
+    private TypeService typeService;
 
     @Resource
     private TaskAcceptedService taskAcceptedService;
@@ -45,100 +49,153 @@ public class TaskController {
     // 在这里插入时，task中的mapServer与server中的ser_name存在约束
     @PostMapping("/createTask")
     @ApiOperation("创建任务")
-    public Result createTask(String dataRange, String taskName, String taskType, String mapServer){
-        Task task = new Task();
-        task.setDateRange(dataRange);
-        task.setTaskName(taskName);
-        task.setTaskType(taskType);
-        task.setMapServer(mapServer);
-        taskService.createTask(task);
-        int taskId = task.getTaskId();
-        return ResultGenerator.getSuccessResult("插入成功，id为："+ taskId);
+    public Result createTask(String dataRange, String taskName, String taskType, String mapServer) {
+        int isSucceed = taskService.createTask(dataRange, taskName, taskType, mapServer);
+        if (isSucceed != -1) {
+            return ResultGenerator.getSuccessResult("插入成功");
+        }
+        return ResultGenerator.getSuccessResult("插入失败");
+    }
+
+    // 在这里插入时，task中的mapServer与server中的ser_name存在约束
+    @PostMapping("/publishTask")
+    @ApiOperation("创建任务,包括保存关联的指定任务用户和类型")
+    public Result publishTask(@RequestBody Map<String, Object> map) {
+        ArrayList<String> dateRange = (ArrayList<String>) map.get("daterange");
+        String taskName = map.get("taskname").toString();
+        String taskType = map.get("type").toString();
+        ArrayList<String> usernameAndTypeArr = (ArrayList<String>) map.get("userArr");
+        String mapServer = map.get("mapserver").toString();
+        String dateRangeStr = dateRange.get(0) + " " + dateRange.get(1);
+        int taskId = taskService.createTask(dateRangeStr, taskName, taskType, mapServer);
+        if (taskId == -1) {
+            return ResultGenerator.getSuccessResult("插入任务失败");
+        }
+//        拆解用户和所属类型
+        String username, typeArr = "";
+        for (String usernameAndType : usernameAndTypeArr) {
+            String[] usernameAndTypeStr = usernameAndType.split(",");
+            username = usernameAndTypeStr[0];
+            for (int i = 1; i < usernameAndTypeStr.length; i++) {
+                if (i == usernameAndTypeStr.length - 1) {
+                    typeArr += usernameAndTypeStr[i];
+                } else {
+                    typeArr += usernameAndTypeStr[i] + ",";
+                }
+            }
+            boolean taskAccept = taskAcceptedService.createTaskAccept(taskId, username, typeArr);
+//            重置
+            typeArr = "";
+            if (taskAccept == false) {
+                return ResultGenerator.getSuccessResult("插入接收任务失败");
+            }
+        }
+        return ResultGenerator.getSuccessResult("插入成功");
     }
 
     @GetMapping("/getTaskInfo")
     @ApiOperation("获取任务")
-    public Result getTaskInfo(){
-        List<Map<String, Object>> list = taskService.getTaskInfo();
-        return ResultGenerator.getSuccessResult(list);
-    }
+    public Map<String, Object> getTaskInfo(@RequestParam(required = false) Integer taskid,
+                                           @RequestParam(required = false) Integer current,
+                                           @RequestParam(required = false) Integer pageSize,
+                                           @RequestParam(required = false) String taskname,
+                                           @RequestParam(required = false) String userArr,
+                                           @RequestParam(required = false) Integer isAdmin) {
 
-//    @GetMapping("/getTotalTasks")
-//    public Result getTotalTasks(){
-//
-//    }
-
-    @PutMapping("/updateTaskById")
-    public Result updateTaskById(int taskId, String taskName,
-                                 String dataRange, String taskType,
-                                 String mapServer){
-        taskService.updateTaskById(taskId,taskName,dataRange,taskType,mapServer);
-        return ResultGenerator.getSuccessResult("成功通过ID更新任务");
-    }
-
-    @DeleteMapping("/deleteTaskById")
-    public Result deleteTaskById(int taskId){
-        taskService.deleteTaskById(taskId);
-        return ResultGenerator.getSuccessResult("成功通过ID删除任务");
-    }
-
-    @GetMapping("/selectTaskById")
-    public Result selectTaskById(int taskId){
-        List<Task> tasks = taskService.selectTaskById(taskId);
-        return ResultGenerator.getSuccessResult(tasks);
-    }
-
-    @PutMapping("/updateTaskStatus")
-    public Result updateTaskStatus(int taskId){
-        taskService.updateTaskStatus(taskId);
-        return ResultGenerator.getSuccessResult("修改任务状态成功");
-    }
-
-
-
-
-
-
-
-    // userArr中为username和type的键值对
-    @GetMapping("publishTask")
-    public Result publishTask(@Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$") List<String> dataRange,
-                              String taskName,
-                              String taskType,
-                              String mapServer,
-                              String[][] userArr){
-        String datarange = String.join(" ", dataRange);
-        Task task = new Task();
-        task.setDateRange(datarange);
-        task.setTaskName(taskName);
-        task.setTaskType(taskType);
-        task.setMapServer(mapServer);
-        taskService.createTask(task);
-
-        int lastID = task.getTaskId();
-
-        Map<String, List<String>> user_TypeArr  = new HashMap<>();
-
-        for (String[] userarr : userArr){
-            String username = userarr[0];
-            String type_arr = userarr[1];
-
-            user_TypeArr.putIfAbsent(username, new ArrayList<>());
-
-            user_TypeArr.get(username).add(type_arr);
+        //            无参时默认值
+        if (ObjectUtil.isEmpty(current)) {
+            current = 1;
         }
-
-        int i;
-        for(i=0; i<userArr.length; i++){
-            String username = userArr[i][0];
-            taskAcceptedService.createTaskAccept( lastID, username, user_TypeArr.get(username).toString());
+        if (ObjectUtil.isEmpty(pageSize)) {
+            pageSize = 5;
         }
+        int taskCount = taskService.getTotalTasks();
+//非管理员只能看到自己的任务
+        List<TaskInfoDTO> list = taskService.getTaskInfo(userArr);
+        List<TaskInfoDTO> result = new ArrayList<>();
+        for (TaskInfoDTO taskInfo : list) {
+//            标记已经存在的同一任务taskInfo对象
+            TaskInfoDTO existingObj = null;
+            int index = -1;
+            for (int i = 0; i < result.size(); i++) {
+                if (ObjectUtil.equals(result.get(i).getTaskid(), taskInfo.getTaskid())) {
+                    existingObj = result.get(i);
+                    index = i;
+                }
+            }
+//            处理typestring得到有效信息
+            String typestring = taskInfo.getTypeArr();
+            // 标注地图时才需要遍历标签方案
+            List<Integer> type = new ArrayList<>();
+            if (typestring != null && !typestring.isEmpty()) {
+                type = Arrays.stream(typestring.split(","))
+                        .map(Integer::parseInt)
+                        .collect(Collectors.toList());
+            }
+            List<Type> typeArr = new ArrayList<>();
+            if (ObjectUtil.isNotNull(taskInfo.getTaskid())) {
+                for (Integer typeId : type) {
+                    String typeName = typeService.getTypeNameById(typeId);
+                    List<Type> types = typeService.getTypes(current, pageSize, typeId, typeName);
+//                    TODO
+                    typeArr.add(types.get(0));
+                }
+            }
+            Map<String, Object> info = new HashMap<>();
+            info.put("userid", taskInfo.getUserid());
+            info.put("username", taskInfo.getUsername());
+            info.put("id", taskInfo.getId());
+            info.put("typeArr", typeArr);
+            if (existingObj != null) {
+// 如果已经存在，直接将用户信息添加到 userArr 数组中
+                List<Map<String, Object>> userArrOrigin = existingObj.getUserArr();
+                userArrOrigin.add(info);
+                taskInfo.setUserArr(userArrOrigin);
+                result.set(index, taskInfo);
+            } else {
+                List<Map<String, Object>> userArrOrigin = new ArrayList<>();
+                userArrOrigin.add(info);
+                taskInfo.setUserArr(userArrOrigin);
+                result.add(taskInfo);
+            }
+        }
+        // 模糊查询：按任务名
+        if (taskname != null && !taskname.isEmpty()) {
+            result = result.stream()
+                    .filter(item -> item.getTaskname().contains(taskname))
+                    .collect(Collectors.toList());
+        }
+        // 模糊查询：按用户名，非管理员时执行
+        if (userArr != null && !userArr.isEmpty() && isAdmin != null && isAdmin != 1) {
+            result = result.stream()
+                    .filter(item -> {
+                        return item.getUserArr().stream()
+                                .anyMatch(user -> user.equals(userArr));
+                    })
+                    .collect(Collectors.toList());
+        }
+        // 开始标注
+        if (taskid != null) {
+            result = result.stream()
+                    .filter(item -> taskid.equals(item.getTaskid()))
+                    .collect(Collectors.toList());
+        }
+        //TODO 查询是否有标注信息
 
-
-
-        return ResultGenerator.getSuccessResult("任务审核成功");
+        // 计算起始索引
+        int startIndex = (current - 1) * pageSize;
+        // 计算结束索引，这里需要做边界检查以避免越界
+        int endIndex = Math.min(startIndex + pageSize, result.size());
+//        模拟分页
+        result = result.subList(startIndex, endIndex);
+        Map<String, Object> responce = new HashMap<>();
+        responce.put("code", 200);
+        responce.put("data", result);
+        responce.put("success", true);
+        responce.put("markGeoJsonArr", null);
+        responce.put("total", taskname != null || userArr != null ? result.size() : taskCount);
+        return responce;
     }
-
 
     @PostMapping("/updateTask")
     public Result updateTask(int taskId, String dataRange, String taskName, String taskType,
@@ -165,31 +222,31 @@ public class TaskController {
         }
 
         int j;
-        for(j=0; j<userArr.length; j++){
+        for (j = 0; j < userArr.length; j++) {
             String username = userArr[j][0];
-            taskAcceptedService.createTaskAccept( taskId, username, user_TypeArr.get(username).toString());
+            taskAcceptedService.createTaskAccept(taskId, username, user_TypeArr.get(username).toString());
         }
 
         return ResultGenerator.getSuccessResult("任务发布成功");
     }
 
-    @DeleteMapping("/deleteTask")
-    public Result deleteTask(int taskId){
+    @DeleteMapping("/deleteTask/{taskId}")
+    public Result deleteTask(int taskId) {
         taskService.deleteTaskById(taskId);
         //todo
 //        markService.deleteMarkByTaskId(taskId);
         return ResultGenerator.getSuccessResult("任务删除成功");
     }
 
-    @GetMapping("/taskId")
-    public Result submitTask(int taskId){
+    @PostMapping("/submitTask")
+    public Result submitTask(@RequestBody Map<String, Object> map) {
+        Integer taskId = (Integer) map.get("taskid");
         List<Task> tasks = taskService.selectTaskById(taskId);
-        for(Task task : tasks){
-            if(task.getMarkTable() == null){
+        for (Task task : tasks) {
+            if (task.getMarkTable() == null) {
                 return ResultGenerator.getFailResult("未开始标注");
             }
         }
-
         taskService.updateTaskStatus(taskId);
         return ResultGenerator.getSuccessResult("任务提交成功，审核中");
     }
@@ -199,10 +256,4 @@ public class TaskController {
         taskService.auditTask(taskId, status, audit_feedback);
         return ResultGenerator.getSuccessResult("编辑任务完成，提交成功");
     }
-
-//    @GetMapping("/findTask")
-//    public Result findTask(){
-//        List<Map<String, Object>> taskDatasetInfos = taskService.findAllTask();
-//        return ResultGenerator.getSuccessResult(taskDatasetInfos);
-//    }
 }

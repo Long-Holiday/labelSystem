@@ -1,12 +1,17 @@
 package com.example.labelMark.service.impl;
 
+import cn.hutool.core.util.ObjectUtil;
 import com.example.labelMark.domain.Task;
 import com.example.labelMark.mapper.TaskMapper;
 import com.example.labelMark.service.TaskService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.labelMark.vo.TaskInfoDTO;
+import io.swagger.models.auth.In;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -23,15 +28,61 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
 
     @Resource
     private TaskMapper taskMapper;
+
     @Override
-    public void createTask(Task task) {
-        taskMapper.insert(task);
+    public int createTask(String dataRange, String taskName, String taskType
+            , String mapServer) {
+        Task task = new Task();
+//        初试状态为未提交
+        task.setStatus(3);
+        task.setDateRange(dataRange);
+        task.setTaskName(taskName);
+        task.setTaskType(taskType);
+        task.setMapServer(mapServer);
+        boolean isSaved = save(task);
+//        taskMapper.insert(task);
+        return isSaved == true ? task.getTaskId() : -1;
     }
 
     @Override
-    public List<Map<String, Object>> getTaskInfo() {
-        List<Map<String, Object>> list = taskMapper.getTaskInfo();
-        return list;
+    public List<TaskInfoDTO> getTaskInfo(String username) {
+        List<Map<String, Object>> list = taskMapper.getTaskInfo(username);
+        List<TaskInfoDTO> taskInfoDTOList = new ArrayList<>();
+        for (Map<String, Object> map : list) {
+            TaskInfoDTO taskInfoDTO = new TaskInfoDTO();
+            if (ObjectUtil.isNotNull(map.get("task_id"))) {
+                taskInfoDTO.setTaskid((Integer) map.get("task_id"));
+            }
+            if (ObjectUtil.isNotNull(map.get("task_name"))) {
+                taskInfoDTO.setTaskname((String) map.get("task_name"));
+            }
+            if (ObjectUtil.isNotNull(map.get("id"))) {
+                taskInfoDTO.setId((Integer) map.get("id"));
+            }
+            if (ObjectUtil.isNotNull(map.get("task_type"))) {
+                taskInfoDTO.setType((String) map.get("task_type"));
+            }
+            if (ObjectUtil.isNotNull(map.get("map_server"))) {
+                taskInfoDTO.setMapserver((String) map.get("map_server"));
+            }
+            if (ObjectUtil.isNotNull(map.get("date_range"))) {
+                taskInfoDTO.setDaterange((String) map.get("date_range"));
+            }
+            if (ObjectUtil.isNotNull(map.get("status"))) {
+                taskInfoDTO.setStatus((Integer) map.get("status"));
+            }
+            if (ObjectUtil.isNotNull(map.get("userid"))) {
+                taskInfoDTO.setUserid((Integer) map.get("userid"));
+            }
+            if (ObjectUtil.isNotNull(map.get("username"))) {
+                taskInfoDTO.setUsername((String) map.get("username"));
+            }
+            if (ObjectUtil.isNotNull(map.get("type_arr"))) {
+                taskInfoDTO.setTypeArr((String) map.get("type_arr"));
+            }
+            taskInfoDTOList.add(taskInfoDTO);
+        }
+        return taskInfoDTOList;
     }
 
     @Override
@@ -68,7 +119,12 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
     }
 
     @Override
-    public  List<Map<String, Object>> findAllTask() {
+    public int getTotalTasks() {
+        return (int) count();
+    }
+
+    @Override
+    public List<Map<String, Object>> findAllTask() {
         System.out.println(231);
         List<Map<String, Object>> taskDatasetInfos = taskMapper.findAllTask();
         System.out.println(taskDatasetInfos);

@@ -9,24 +9,19 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 
-@RestController
+@RestController("/geoserver")
 public class GeoServerController {
 
     @Resource
-    private static GeoServerService geoServerService;
+    private GeoServerService geoServerService;
 
-    @Autowired
-    public GeoServerController(GeoServerService geoServerService) {
-        this.geoServerService = geoServerService;
-    }
-
-    @GetMapping("/geoserver/info/{mapServer}")
+    @GetMapping("/info/{mapServer}")
     public String getGeoserverInfo(@PathVariable String mapServer) {
         return geoServerService.getGeoserverInfo(mapServer);
     }
 
-    @GetMapping("/geoserver/img")
-    public static ResponseEntity<byte[]> getGeoserverImg(
+    @GetMapping("/img")
+    public ResponseEntity<byte[]> getGeoserverImg(
             @RequestParam String layerName,
             @RequestParam double width,
             @RequestParam double height,

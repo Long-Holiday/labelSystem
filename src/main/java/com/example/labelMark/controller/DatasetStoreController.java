@@ -5,6 +5,7 @@ import com.example.labelMark.domain.ImageInfo;
 import com.example.labelMark.domain.Task;
 
 import com.example.labelMark.service.DatasetStoreService;
+import com.example.labelMark.service.GeoServerService;
 import com.example.labelMark.service.TaskService;
 import com.example.labelMark.service.TypeService;
 import com.example.labelMark.utils.*;
@@ -51,18 +52,18 @@ public class DatasetStoreController {
 
     @Resource
     private GeoServerRESTClient geoServerRESTClient;
-
-
+    @Resource
+    private GeoServerService geoServerService;
 
     @GetMapping("/getTotalImgNumBySampleId")
-    public Result getTotalImgNumBySampleId(int sampleId){
+    public Result getTotalImgNumBySampleId(int sampleId) {
         int sum = datasetStoreService.getTotalImgNumBySampleId(sampleId);
         return ResultGenerator.getSuccessResult(sum);
     }
 
 
     @GetMapping("/findImgSrcTypeNameBySampleId")
-    public Result findImgSrcTypeNameBySampleId(int sampleId, int pageSize, int current){
+    public Result findImgSrcTypeNameBySampleId(int sampleId, int pageSize, int current) {
         List<ImageInfo> imageInfo = datasetStoreService.findImgSrcTypeNameBySampleId(sampleId, pageSize, current);
         return ResultGenerator.getSuccessResult(imageInfo);
     }
@@ -276,13 +277,13 @@ public class DatasetStoreController {
         images.put("width", width);
         images.put("height", height);
 
-        ResponseEntity<byte[]> result = GeoServerController.getGeoserverImg(
+        ResponseEntity<byte[]> result = geoServerService.getGeoserverImg(
                 taskService.getServerById(taskId),
                 width,
                 height,
                 bbox,
                 srs
-                );
+        );
 
         // 区分样本集类型并确定文件路径
         Path filePath = Paths.get(String.valueOf(outputDirImage), "train_1.jpeg");
@@ -354,7 +355,7 @@ public class DatasetStoreController {
             annotation.put("segmentation", segmentation);
             annotations.add(annotation);
 
-            GeoServerController.getGeoserverImg(taskService.getServerById(taskId), 256, 256, geoBbox, "EPSG:3857");
+            geoServerService.getGeoserverImg(taskService.getServerById(taskId), 256, 256, geoBbox, "EPSG:3857");
 
             Path localFilePath = Paths.get(String.valueOf(downloadDir), markTaskId);
             // 将响应流中的数据写入文件

@@ -18,7 +18,7 @@ import javax.validation.constraints.Pattern;
 
 /**
  * <p>
- * 
+ *
  * </p>
  *
  * @author hjw
@@ -51,6 +51,7 @@ public class Task implements Serializable {
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private String dateRange;
 
+    @ApiModelProperty("标注信息")
     @TableField("mark_table")
     private String markTable;
 

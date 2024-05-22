@@ -23,8 +23,19 @@ import java.util.Map;
 @Mapper
 public interface TaskMapper extends BaseMapper<Task> {
 
-    @MapKey("task_id")
-    List<Map<String, Object>> getTaskInfo();
+    /*@MapKey("task_id")
+    List<Map<String, Object>> getTaskInfo();*/
+
+    @Select({"<script>",
+            "select task_accepted.id,task_accepted.type_arr,sys_user.username as username",
+            "sys_user.userid as userid,task.* from task join task_accepted on task.taskid=task_accepted.taskid",
+            "join sys_user on  task_accepted.username=sys_user.username ",
+            "<when test='username!=null'>",
+            "where sys_user.username=#{username}",
+            "</when>",
+            "order by status,taskid DESC ",
+            "</script>"})
+    List<Map<String, Object>> getTaskInfo(String username);
 
     @Select("select task_id = #{taskId} from task")
     List<Integer> getIDs();

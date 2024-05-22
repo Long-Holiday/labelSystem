@@ -2,6 +2,8 @@ package com.example.labelMark.service;
 
 import com.example.labelMark.domain.Task;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.example.labelMark.vo.TaskInfoDTO;
+import org.apache.ibatis.annotations.Select;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,9 +20,10 @@ import java.util.Map;
 @Service
 public interface TaskService extends IService<Task> {
 
-    void createTask(Task task);
+    int createTask(String dataRange, String taskName, String taskType,
+                   String mapServer);
 
-    List<Map<String, Object>> getTaskInfo();
+    List<TaskInfoDTO> getTaskInfo(String username);
 
     List<Integer> getIDs();
 
@@ -33,6 +36,8 @@ public interface TaskService extends IService<Task> {
     void updateTaskStatus(int taskId);
 
     void auditTask(int taskId, int status, String auditFeedback);
+
+    int getTotalTasks();
 
     List<Map<String, Object>> findAllTask();
 

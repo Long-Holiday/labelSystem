@@ -4,21 +4,24 @@
 
     <select id="getTaskInfo" resultType="java.util.Map">
         SELECT
-            task_accepted.id,
-            task_accepted.type_string,
-            sys_user.username AS username,
-            sys_user.user_id AS user_id,
-            task.task_id,
-            task.task_name,
-            task.type,
-            task.map_server,
-            task.date_range,
-            task.mark_table,
-            task.status,
-            task.audit_feedback
+        task_accepted.id,
+        task_accepted.type_arr,
+        sys_user.username AS username,
+        sys_user.userid AS userid,
+        task.task_id,
+        task.task_name,
+        task.task_type,
+        task.map_server,
+        task.date_range,
+        task.mark_table,
+        task.status,
+        task.audit_feedback
         FROM task
-                 JOIN taskaccepted ON task.task_id = task_accepted.task_id
-                 JOIN sys_user ON task_accepted.username = sys_user.username
+        JOIN task_accepted ON task.task_id = task_accepted.task_id
+        JOIN sys_user ON task_accepted.username = sys_user.username
+        <if test="username !=null">
+            where sys_user.username=#{username}
+        </if>
         ORDER BY task.status, task.task_id DESC
     </select>
 </mapper>
