@@ -34,10 +34,10 @@ spring:
       max-file-size: 5MB
       max-request-size: 10MB
 
-  geoserver:
-    url: http://your-geoserver-url
-    username: admin
-    password: geoserver
+geoserver:
+  url: http://your-geoserver-url
+  username: admin
+  password: geoserver
 
 minio:
   endpoint: http://127.0.0.1:9000 #Minio服务所在地址

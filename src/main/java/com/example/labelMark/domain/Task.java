@@ -51,10 +51,6 @@ public class Task implements Serializable {
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private String dateRange;
 
-    @ApiModelProperty("标注信息")
-    @TableField("mark_table")
-    private String markTable;
-
     @ApiModelProperty("0审核中，1审核通过，2审核失败，3未提交")
     @TableField("status")
     private Integer status;

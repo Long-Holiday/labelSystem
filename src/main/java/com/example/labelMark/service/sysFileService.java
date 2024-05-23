@@ -22,4 +22,6 @@ public interface sysFileService extends IService<sysFile> {
     void updateFile(Integer fileId, String fileName);
 
     void deleteFile(String fileName);
+
+    void createFile(String fileName, String updateTime, long size);
 }

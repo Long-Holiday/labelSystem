@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.example.labelMark.domain.Server;
 import com.example.labelMark.domain.sysFile;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -34,4 +35,6 @@ public interface sysFileMapper extends BaseMapper<sysFile> {
     void updateFile(Integer fileId, String fileName);
 
 
+    @Insert("INSERT INTO file(file_name, update_time, status, size) values (#{fileName}, #{updateTime}, 0, #{size})")
+    void createFile(String fileName, String updateTime, long size);
 }

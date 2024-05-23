@@ -43,4 +43,9 @@ public class sysFileServiceImpl extends ServiceImpl<sysFileMapper, sysFile> impl
         sysfileMapper.delete(queryWrapper);
 
     }
+
+    @Override
+    public void createFile(String fileName, String updateTime, long size) {
+        sysfileMapper.createFile(fileName, updateTime, size);
+    }
 }

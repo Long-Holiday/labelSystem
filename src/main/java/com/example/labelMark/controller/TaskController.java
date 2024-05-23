@@ -242,11 +242,11 @@ public class TaskController {
     public Result submitTask(@RequestBody Map<String, Object> map) {
         Integer taskId = (Integer) map.get("taskid");
         List<Task> tasks = taskService.selectTaskById(taskId);
-        for (Task task : tasks) {
-            if (task.getMarkTable() == null) {
-                return ResultGenerator.getFailResult("未开始标注");
-            }
-        }
+//        for (Task task : tasks) {
+//            if (task.getMarkTable() == null) {
+//                return ResultGenerator.getFailResult("未开始标注");
+//            }
+//        }
         taskService.updateTaskStatus(taskId);
         return ResultGenerator.getSuccessResult("任务提交成功，审核中");
     }

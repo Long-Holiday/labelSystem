@@ -18,9 +18,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -51,9 +49,8 @@ public class sysFileController {
             String chunkDir = Paths.get(TEMP_DIR, fileNameArr[0]).toString();
             Files.createDirectories(Paths.get(chunkDir));
 
-//            file.transferTo(Paths.get(chunkDir, fileNameArr[1]+"."+fileNameArr[2]).toFile());
-            String fileName = fileNameArr[1]+"."+fileNameArr[2];
-            File destFile = new File(chunkDir, fileName);
+
+            File destFile = new File(chunkDir, String.valueOf(fileNameArr[1]));
             file.transferTo(destFile);
 
 
@@ -65,20 +62,40 @@ public class sysFileController {
 
     }
 
-    /*    @PostMapping ("/mergeTif")
-        public Result mergeTif(MultipartFile file){
-            String[] fileNameArr = file.getOriginalFilename().split("\\.");
-            String chunkDir = Paths.get(TEMP_DIR, fileNameArr[0]).toString();
-            try {
-                List<BufferedImage> images = loadImages(chunkDir);
-                BufferedImage mergedImage = mergeImages(images);
-    //            saveMergedImage(mergedImage, Paths.get(TEMP_DIR, "merged.jpg").toString());
-                file.transferTo(Paths.get(UPLOAD_DIR, String.valueOf(mergedImage)).toFile());
-            } catch (IOException e) {
-                e.printStackTrace();
+    @PostMapping("/mergeTif")
+    public Result mergeTif(@RequestParam String fileName, @RequestParam String updatetime, @RequestParam long size) {
+        String[] fileNameArr = fileName.split("\\.");
+        String chunkDir = Paths.get(TEMP_DIR, fileNameArr[0]).toString();
+        String destFilePath = Paths.get(UPLOAD_DIR, fileName).toString();
+
+        try {
+            File dir = new File(chunkDir);
+            File[] chunks = dir.listFiles();
+            if (chunks != null) {
+                Arrays.sort(chunks, Comparator.comparingInt(file -> Integer.parseInt(file.getName())));
+
+                try (FileOutputStream out = new FileOutputStream(destFilePath)) {
+                    for (File chunk : chunks) {
+                        Files.copy(chunk.toPath(), out);
+                    }
+                }
             }
-            return ResultGenerator.getSuccessResult();
-        }*/
+
+            // 删除临时切片目录
+            Files.walk(Paths.get(chunkDir))
+                    .sorted(Comparator.reverseOrder())
+                    .map(java.nio.file.Path::toFile)
+                    .forEach(File::delete);
+
+            // 在数据库中创建文件记录
+            sysfileService.createFile(fileName, updatetime, size);
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return ResultGenerator.getSuccessResult("文件合并成功！");
+    }
     @PostMapping("/upload")
     public Result upload(@RequestParam("file") MultipartFile file,
                                          @RequestParam("fileName") String fileName,
@@ -139,12 +156,12 @@ public class sysFileController {
     }
 
 
-    @PutMapping("/updateFile")
-    public Result updateFile(sysFile sysfile, String fileName){
-        Integer fileId = sysfile.getFileId();
-        sysfileService.updateFile(fileId, fileName);
-        return ResultGenerator.getSuccessResult();
-    }
+//    @PutMapping("/updateFile")
+//    public Result updateFile(sysFile sysfile, String fileName){
+//        Integer fileId = sysfile.getFileId();
+//        sysfileService.updateFile(fileId, fileName);
+//        return ResultGenerator.getSuccessResult();
+//    }
 
 
     @DeleteMapping("/deleteFile")
@@ -160,52 +177,6 @@ public class sysFileController {
     }
 
 
-//    public static List<BufferedImage> loadImages(String directoryPath) {
-//        List<BufferedImage> images = new ArrayList<>();
-//        try {
-//            // 递归地访问目录，并筛选出所有.jpg文件
-//            List<Path> imageFiles = Files.walk(Path.of(directoryPath), Integer.MAX_VALUE)
-//                    .filter(path -> path.toString().toLowerCase().endsWith(".jpg"))
-//                    .collect(Collectors.toList());
 //
-//            // 加载图片文件到BufferedImage对象的列表中
-//            for (Path path : imageFiles) {
-//                try {
-//                    BufferedImage image = ImageIO.read(path.toFile());
-//                    if (image != null) {
-//                        images.add(image);
-//                    }
-//                } catch (IOException e) {
-//                    // 错误处理，例如打印日志
-//                    e.printStackTrace();
-//                }
-//            }
-//        }  catch (IOException e) {
-//            // 错误处理，例如打印日志
-//            e.printStackTrace();
-//        }
-//        return images;
-//    }
-//
-//    private static BufferedImage mergeImages(List<BufferedImage> images) throws IOException {
-//        int width = images.stream().mapToInt(BufferedImage::getWidth).sum();
-//        int height = images.get(0).getHeight();
-//
-//        BufferedImage mergedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-//        Graphics2D g2d = mergedImage.createGraphics();
-//
-//        int x = 0;
-//        for (BufferedImage image : images) {
-//            g2d.drawImage(image, x, 0, null);
-//            x += image.getWidth();
-//        }
-//
-//        g2d.dispose();
-//        return mergedImage;
-//    }
-
-//    private static void saveMergedImage(BufferedImage image, String outputPath) throws IOException {
-//        ImageIO.write(image, "jpg", new sysFile(outputPath));
-//    }
 
 }
