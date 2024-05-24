@@ -1,5 +1,6 @@
 package com.example.labelMark.controller;
 
+import com.example.labelMark.service.SysFileService;
 import org.json.JSONObject;
 
 import com.example.labelMark.domain.Server;
@@ -25,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -45,6 +47,8 @@ public class ServerController {
     private static final String PASSWORD = "geoserver";
     @Resource
     private ServerService serverService;
+    @Resource
+    private SysFileService sysFileService;
 
     @Resource
     private GeoServerRESTClient geoServerRESTClient;
@@ -69,11 +73,31 @@ public class ServerController {
     }
 
 
-    @GetMapping("/createServer")
-    public Result createServer(Server server){
+    @PostMapping("/createServer")
+    public Result createServer(@RequestBody Map<String, Object> map) {
         try {
-            serverService.createServer(server);
-            return ResultGenerator.getSuccessResult("创建成功");
+            String filename = map.get("filename").toString();
+            String publisher = map.get("publisher").toString();
+            String publishtime = map.get("publishtime").toString();
+            String serdesc = map.get("serdesc").toString();
+            String sername = map.get("sername").toString();
+            String seryear = map.get("seryear").toString();
+            //创建服务
+            Server server = new Server();
+            server.setPublisher(publisher);
+            server.setPublishTime(publishtime);
+            server.setSerDesc(serdesc);
+            server.setSerYear(seryear);
+            server.setSerName(sername);
+            boolean isInserted = serverService.createServer(server);
+            if (isInserted) {
+//                TODO 使用fileId来唯一限定
+                //            更新服务状态为已发布
+                sysFileService.updateFileStatus(filename);
+                return ResultGenerator.getSuccessResult("创建服务成功");
+            } else {
+                return ResultGenerator.getFailResult("创建服务失败");
+            }
         }catch (Exception e){
             return ResultGenerator.getFailResult("创建失败"+ e.getMessage());
         }

@@ -1,8 +1,8 @@
 package com.example.labelMark.controller;
 
 import cn.hutool.core.util.ObjectUtil;
-import com.example.labelMark.domain.sysFile;
-import com.example.labelMark.service.sysFileService;
+import com.example.labelMark.domain.SysFile;
+import com.example.labelMark.service.SysFileService;
 import com.example.labelMark.utils.ResultGenerator;
 import com.example.labelMark.vo.constant.Result;
 import com.example.labelMark.vo.constant.StatusEnum;
@@ -12,18 +12,19 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 
 /**
  * <p>
- *  前端控制器
+ * 前端控制器
  * </p>
  *
  * @author hjw
@@ -31,48 +32,78 @@ import java.util.*;
  */
 @RestController
 @RequestMapping("/files")
-public class sysFileController {
+public class SysFileController {
 
     @Resource
-    private sysFileService sysfileService;
+    private SysFileService sysfileService;
 
-    private static final String TEMP_DIR = "com/example/labelMark/resource/temp";
+    private static final String TEMP_DIR = System.getProperty("user.dir") + File.separator + "src/main/java/com/example/labelMark/resource/temp";
 
-    private static final String UPLOAD_DIR = "com/example/labelMark/resource/output";
+    private static final String UPLOAD_DIR = System.getProperty("user.dir") + File.separator + "src/main/java/com/example/labelMark/resource/output";
 
-    @PostMapping ("/uploadTif")
-    public Result uploadTif(@RequestParam MultipartFile file)  {
-
+    @PostMapping("/uploadTif")
+    public Result uploadTif(@RequestParam MultipartFile file) {
         try {
-            String[] fileNameArr = file.getOriginalFilename().split("\\.");
-//            System.out.println(Arrays.toString(fileNameArr));
-            String chunkDir = Paths.get(TEMP_DIR, fileNameArr[0]).toString();
-            Files.createDirectories(Paths.get(chunkDir));
+            // 获取文件名和扩展名
+            String originalFileName = file.getOriginalFilename();
+            if (originalFileName == null) {
+                throw new RuntimeException("文件名不能为空");
+            }
 
+            // 分割文件名（例如 name.index.extension）
+            String[] fileNameArr = originalFileName.split("\\.");
+            if (fileNameArr.length < 3) {
+                throw new RuntimeException("文件名格式不正确");
+            }
 
-            File destFile = new File(chunkDir, String.valueOf(fileNameArr[1]));
-            file.transferTo(destFile);
+            // 主文件名部分
+            String baseFileName = fileNameArr[0];
 
+            // 构建临时目录路径
+            String chunkDir = Paths.get(TEMP_DIR, baseFileName).toString();
+            // 创建临时目录
+            Path directories = Files.createDirectories(Paths.get(chunkDir));
+            System.out.println(directories);
+            // 构建分片文件路径
+            Path chunkFilePath = Paths.get(chunkDir, originalFileName);
+
+            // 拷贝文件分片到指定路径
+            Files.copy(file.getInputStream(), chunkFilePath, StandardCopyOption.REPLACE_EXISTING);
 
         } catch (IOException | IllegalStateException e) {
             throw new RuntimeException(e);
         }
 
         return ResultGenerator.getSuccessResult();
-
     }
 
+
     @PostMapping("/mergeTif")
-    public Result mergeTif(@RequestParam String fileName, @RequestParam String updatetime, @RequestParam long size) {
+    public Result mergeTif(@RequestBody Map<String, Object> map) throws IOException {
+        String fileName = map.get("fileName").toString();
+        String updatetime = map.get("updatetime").toString();
+        String size = map.get("size").toString();
         String[] fileNameArr = fileName.split("\\.");
         String chunkDir = Paths.get(TEMP_DIR, fileNameArr[0]).toString();
-        String destFilePath = Paths.get(UPLOAD_DIR, fileName).toString();
+        String destFilePath = Paths.get(UPLOAD_DIR, fileName).toString(); // Include file name and extension
+
+        // Ensure the upload directory exists
+        Files.createDirectories(Paths.get(UPLOAD_DIR));
 
         try {
             File dir = new File(chunkDir);
             File[] chunks = dir.listFiles();
             if (chunks != null) {
-                Arrays.sort(chunks, Comparator.comparingInt(file -> Integer.parseInt(file.getName())));
+                Arrays.sort(chunks, new Comparator<File>() {
+                    @Override
+                    public int compare(File o1, File o2) {
+                        String[] split1 = o1.getName().split("\\.");
+                        String[] split2 = o2.getName().split("\\.");
+                        Integer index1 = Integer.valueOf(split1[1]);
+                        Integer index2 = Integer.valueOf(split2[1]);
+                        return index1.compareTo(index2);
+                    }
+                });
 
                 try (FileOutputStream out = new FileOutputStream(destFilePath)) {
                     for (File chunk : chunks) {
@@ -84,7 +115,7 @@ public class sysFileController {
             // 删除临时切片目录
             Files.walk(Paths.get(chunkDir))
                     .sorted(Comparator.reverseOrder())
-                    .map(java.nio.file.Path::toFile)
+                    .map(Path::toFile)
                     .forEach(File::delete);
 
             // 在数据库中创建文件记录
@@ -96,6 +127,7 @@ public class sysFileController {
 
         return ResultGenerator.getSuccessResult("文件合并成功！");
     }
+
     @PostMapping("/upload")
     public Result upload(@RequestParam("file") MultipartFile file,
                                          @RequestParam("fileName") String fileName,
@@ -139,7 +171,7 @@ public class sysFileController {
             if (ObjectUtil.isEmpty(pageSize)) {
                 pageSize = 5;
             }
-            List<sysFile> sysfiles = sysfileService.getAllFiles(current, pageSize, fileId);
+            List<SysFile> sysfiles = sysfileService.getAllFiles(current, pageSize, fileId);
             Map<String, Object> map = new HashMap<>();
             map.put("code", StatusEnum.SUCCESS);
             map.put("data", sysfiles);
@@ -156,24 +188,25 @@ public class sysFileController {
     }
 
 
-//    @PutMapping("/updateFile")
-//    public Result updateFile(sysFile sysfile, String fileName){
-//        Integer fileId = sysfile.getFileId();
-//        sysfileService.updateFile(fileId, fileName);
-//        return ResultGenerator.getSuccessResult();
-//    }
+    @PutMapping("/updateFile")
+    public Result updateFile(SysFile sysfile, String fileName) {
+        Integer fileId = sysfile.getFileId();
+        sysfileService.updateFile(fileId, fileName);
+        return ResultGenerator.getSuccessResult();
+    }
 
 
-    @DeleteMapping("/deleteFile")
-    public Result deleteFile(String fileName){
+    @DeleteMapping("/deleteFile/{fileName}")
+    public Result deleteFile(@PathVariable String fileName) {
         sysfileService.deleteFile(fileName);
         return ResultGenerator.getSuccessResult();
     }
 
-    @GetMapping("getFilePath")
-    public Result getFilePath(String fileName){
+    @GetMapping("/getFilePath")
+    public Result getFilePath(@RequestParam(value = "filename") String fileName) {
         String path = String.valueOf(Paths.get(UPLOAD_DIR, fileName));
-        return ResultGenerator.getSuccessResult(path);
+        path = path.replace("\\", "/");
+        return ResultGenerator.getSuccessResult((Object) path);
     }
 
 

@@ -137,7 +137,6 @@ public class TaskController {
                 for (Integer typeId : type) {
                     String typeName = typeService.getTypeNameById(typeId);
                     List<Type> types = typeService.getTypes(current, pageSize, typeId, typeName);
-//                    TODO
                     typeArr.add(types.get(0));
                 }
             }
@@ -197,41 +196,23 @@ public class TaskController {
         return responce;
     }
 
-    @PostMapping("/updateTask")
-    public Result updateTask(int taskId, String dataRange, String taskName, String taskType,
-                             String mapServer, String[][] userArr, List<Integer> userArrId){
-
-        String datarange = String.join(" ", dataRange);
-        taskService.updateTaskById(taskId, taskName, datarange, taskType, mapServer);
-
-
-        int i;
-        for( i = 0; i < userArrId.size(); i++){
-            taskAcceptedService.deleteTaskAcceptById(userArrId.get(i));
-        };
-
-        Map<String, List<String>> user_TypeArr  = new HashMap<>();
-
-        for (String[] userarr : userArr){
-            String username = userarr[0];
-            String type_arr = userarr[1];
-
-            user_TypeArr.putIfAbsent(username, new ArrayList<>());
-
-            user_TypeArr.get(username).add(type_arr);
-        }
-
-        int j;
-        for (j = 0; j < userArr.length; j++) {
-            String username = userArr[j][0];
-            taskAcceptedService.createTaskAccept(taskId, username, user_TypeArr.get(username).toString());
-        }
-
+    @PutMapping("/updateTask")
+    public Result updateTask(@RequestBody Map<String, Object> map) {
+        ArrayList<String> dateRange = (ArrayList<String>) map.get("daterange");
+        String taskName = map.get("taskname").toString();
+        String taskType = map.get("type").toString();
+        ArrayList<String> usernameAndTypeArr = (ArrayList<String>) map.get("userArr");
+        String mapServer = map.get("mapserver").toString();
+        Integer taskId = Integer.valueOf(map.get("taskid").toString());
+//        拼接起止日期
+        String dateRangeStr = dateRange.get(0) + " " + dateRange.get(1);
+        taskService.updateTaskById(taskId, taskName, dateRangeStr, taskType, mapServer);
         return ResultGenerator.getSuccessResult("任务发布成功");
     }
 
     @DeleteMapping("/deleteTask/{taskId}")
-    public Result deleteTask(int taskId) {
+    public Result deleteTask(@PathVariable int taskId) {
+        taskAcceptedService.deleteTaskAcceptByTaskId(taskId);
         taskService.deleteTaskById(taskId);
         //todo
 //        markService.deleteMarkByTaskId(taskId);

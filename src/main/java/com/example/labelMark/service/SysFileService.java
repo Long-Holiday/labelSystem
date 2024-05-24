@@ -1,27 +1,29 @@
 package com.example.labelMark.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.example.labelMark.domain.sysFile;
+import com.example.labelMark.domain.SysFile;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 /**
  * <p>
- *  服务类
+ * 服务类
  * </p>
  *
  * @author hjw
  * @since 2024-04-18
  */
 @Service
-public interface sysFileService extends IService<sysFile> {
+public interface SysFileService extends IService<SysFile> {
 
-    List<sysFile> getAllFiles(Integer current, Integer pageSize, Integer fileId);
+    List<SysFile> getAllFiles(Integer current, Integer pageSize, Integer fileId);
 
     void updateFile(Integer fileId, String fileName);
 
     void deleteFile(String fileName);
 
-    void createFile(String fileName, String updateTime, long size);
+    void createFile(String fileName, String updateTime, String size);
+
+    boolean updateFileStatus(String fileName);
 }

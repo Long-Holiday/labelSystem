@@ -19,7 +19,7 @@ import org.apache.ibatis.annotations.Options;
 public interface TaskAcceptedMapper extends BaseMapper<TaskAccepted> {
 
     @Delete("delete from task_accepted where task_id=#{id}")
-    void deleteTaskAcceptById(int id);
+    void deleteTaskAcceptByTaskId(int id);
 
 //    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
     TaskAccepted createTaskAccept(Integer taskId, String username, String typeArr);

@@ -40,9 +40,9 @@ public class ServerServiceImpl extends ServiceImpl<ServerMapper, Server> impleme
     }
 
     @Override
-    public void createServer(Server server) {
-        server.setPublishTime(String.valueOf(LocalDateTime.now()));
-        serverMapper.insert(server);
+    public boolean createServer(Server server) {
+        boolean save = save(server);
+        return save;
     }
 
 

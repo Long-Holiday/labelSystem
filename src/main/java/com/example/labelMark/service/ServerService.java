@@ -21,5 +21,5 @@ public interface ServerService extends IService<Server> {
 
     int deleteServerByName(String serName);
 
-    void createServer(Server server);
+    boolean createServer(Server server);
 }

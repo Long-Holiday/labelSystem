@@ -11,7 +11,7 @@ import lombok.Setter;
 
 /**
  * <p>
- * 
+ *
  * </p>
  *
  * @author hjw
@@ -21,7 +21,7 @@ import lombok.Setter;
 @Setter
 @TableName("file")
 @ApiModel(value = "File对象", description = "")
-public class sysFile implements Serializable {
+public class SysFile implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

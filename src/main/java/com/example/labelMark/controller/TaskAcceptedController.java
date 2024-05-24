@@ -33,7 +33,7 @@ public class TaskAcceptedController {
     // 通过task_id删除TaskAccept
     @GetMapping("/deleteTaskAcceptById")
     public Result deleteTaskAcceptById(int ID){
-        taskAcceptedService.deleteTaskAcceptById(ID);
+        taskAcceptedService.deleteTaskAcceptByTaskId(ID);
         return ResultGenerator.getSuccessResult("删除成功");
     }
 

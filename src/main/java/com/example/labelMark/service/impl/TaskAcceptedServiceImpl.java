@@ -1,17 +1,16 @@
 package com.example.labelMark.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.labelMark.domain.TaskAccepted;
-import com.example.labelMark.domain.sysFile;
 import com.example.labelMark.mapper.TaskAcceptedMapper;
-import com.example.labelMark.mapper.TaskMapper;
 import com.example.labelMark.service.TaskAcceptedService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
+
 /**
  * <p>
- *  服务实现类
+ * 服务实现类
  * </p>
  *
  * @author hjw
@@ -20,6 +19,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class TaskAcceptedServiceImpl extends ServiceImpl<TaskAcceptedMapper, TaskAccepted> implements TaskAcceptedService {
 
+    @Resource
     private TaskAcceptedMapper taskAcceptedMapper;
 
     @Override
@@ -34,10 +34,10 @@ public class TaskAcceptedServiceImpl extends ServiceImpl<TaskAcceptedMapper, Tas
     }
 
     @Override
-    public void deleteTaskAcceptById(int id) {
+    public void deleteTaskAcceptByTaskId(int id) {
 
 
-        taskAcceptedMapper.deleteTaskAcceptById(id);
+        taskAcceptedMapper.deleteTaskAcceptByTaskId(id);
 
     }
 }

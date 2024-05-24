@@ -17,5 +17,5 @@ public interface TaskAcceptedService extends IService<TaskAccepted> {
 
     boolean createTaskAccept(Integer taskId, String username, String typeArr);
 
-    void deleteTaskAcceptById(int id);
+    void deleteTaskAcceptByTaskId(int id);
 }
