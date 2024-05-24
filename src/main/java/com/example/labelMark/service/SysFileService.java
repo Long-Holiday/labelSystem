@@ -19,7 +19,7 @@ public interface SysFileService extends IService<SysFile> {
 
     List<SysFile> getAllFiles(Integer current, Integer pageSize, Integer fileId);
 
-    void updateFile(Integer fileId, String fileName);
+    void updateFile(Integer fileId, String fileName, String updateTime);
 
     void deleteFile(String fileName);
 

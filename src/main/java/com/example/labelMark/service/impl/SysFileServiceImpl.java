@@ -33,8 +33,8 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
     }
 
     @Override
-    public void updateFile(Integer fileId, String fileName) {
-        sysfileMapper.updateFile(fileId, fileName);
+    public void updateFile(Integer fileId, String fileName, String updateTime) {
+        sysfileMapper.updateFile(fileId, fileName, updateTime);
     }
 
     @Override

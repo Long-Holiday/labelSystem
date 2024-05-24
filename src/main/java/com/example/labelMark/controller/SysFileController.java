@@ -189,17 +189,47 @@ public class SysFileController {
 
 
     @PutMapping("/updateFile")
-    public Result updateFile(SysFile sysfile, String fileName) {
-        Integer fileId = sysfile.getFileId();
-        sysfileService.updateFile(fileId, fileName);
-        return ResultGenerator.getSuccessResult();
+    public Result updateFile(Integer fileId, String fileName, String originFileName, String updateTime) {
+
+        // 创建文件对象
+        File oldFile = new File(UPLOAD_DIR, originFileName);
+        File newFile = new File(UPLOAD_DIR, fileName);
+
+        // 尝试重命名文件
+        boolean success = oldFile.renameTo(newFile);
+
+        // 检查重命名是否成功
+        if (success) {
+            System.out.println("文件名修改成功");
+            sysfileService.updateFile(fileId, fileName, updateTime);
+            return ResultGenerator.getSuccessResult();
+        } else {
+            System.err.println("文件名修改失败");
+            return ResultGenerator.getFailResult("文件名修改失败");
+        }
+
+
     }
 
 
     @DeleteMapping("/deleteFile/{fileName}")
     public Result deleteFile(@PathVariable String fileName) {
-        sysfileService.deleteFile(fileName);
-        return ResultGenerator.getSuccessResult();
+        try {
+            // 生成文件路径
+            Path filePath = Paths.get(UPLOAD_DIR, fileName);
+
+            // 删除文件
+            Files.delete(filePath);
+            System.out.println("删除文件成功！");
+            // 这里可以调用相应的方法从数据库中删除文件记录
+            sysfileService.deleteFile(fileName);
+            return ResultGenerator.getSuccessResult();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("删除文件失败！");
+            return ResultGenerator.getFailResult("删除文件失败");
+        }
+
     }
 
     @GetMapping("/getFilePath")
