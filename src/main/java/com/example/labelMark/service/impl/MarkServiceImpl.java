@@ -50,6 +50,17 @@ public class MarkServiceImpl extends ServiceImpl<MarkMapper, Mark> implements Ma
         markMapper.insertMark(mark);
     }
 
+    @Override
+    public void deleteMarkByTaskId(int taskId) {
+        markMapper.deleteMarkByTaskId(taskId);
+    }
+
+    @Override
+    public Integer GetTaskIdNum(int taskId) {
+        Integer num = markMapper.GetTaskIdNum(taskId);
+        return num;
+    }
+
 //    @Override
 //    public void createMark(String markName) {
 //        markMapper.createMark(markName);

@@ -214,20 +214,19 @@ public class TaskController {
     public Result deleteTask(@PathVariable int taskId) {
         taskAcceptedService.deleteTaskAcceptByTaskId(taskId);
         taskService.deleteTaskById(taskId);
-        //todo
-//        markService.deleteMarkByTaskId(taskId);
+        markService.deleteMarkByTaskId(taskId);
         return ResultGenerator.getSuccessResult("任务删除成功");
     }
 
     @PostMapping("/submitTask")
     public Result submitTask(@RequestBody Map<String, Object> map) {
         Integer taskId = (Integer) map.get("taskid");
-        List<Task> tasks = taskService.selectTaskById(taskId);
-//        for (Task task : tasks) {
-//            if (task.getMarkTable() == null) {
-//                return ResultGenerator.getFailResult("未开始标注");
-//            }
-//        }
+//        List<Task> tasks = taskService.selectTaskById(taskId);
+
+            if (markService.GetTaskIdNum(taskId) != 0) {
+                return ResultGenerator.getFailResult("未开始标注");
+            }
+
         taskService.updateTaskStatus(taskId);
         return ResultGenerator.getSuccessResult("任务提交成功，审核中");
     }

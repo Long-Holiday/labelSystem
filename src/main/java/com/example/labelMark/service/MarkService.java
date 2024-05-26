@@ -19,12 +19,11 @@ public interface MarkService extends IService<Mark> {
 
     void createMark(int taskId, int userId, int typeId, String geom);
 
-//    List<String> getMarkInfoArr()
-
-//    void deleteMarkByName(String markName);
-
     void deleteMark(int taskId, int userId, int typeId);
 
     void insertMark(Mark mark);
 
+    void deleteMarkByTaskId(int taskId);
+
+    Integer GetTaskIdNum(int taskId);
 }

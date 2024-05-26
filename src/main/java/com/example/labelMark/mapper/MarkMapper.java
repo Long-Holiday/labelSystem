@@ -28,6 +28,12 @@ public interface MarkMapper extends BaseMapper<Mark> {
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insertMark(Mark mark);
 
+    @Delete("DELETE FROM mark WHERE task_id=#{taskId}")
+    void deleteMarkByTaskId(int taskId);
+
+    @Select("SELECT COUNT(*) FROM mark WHERE task_id=#{taskId}")
+    Integer GetTaskIdNum(int taskId);
+
 //    @Insert()
 //    void createMark(String markName);
 }
