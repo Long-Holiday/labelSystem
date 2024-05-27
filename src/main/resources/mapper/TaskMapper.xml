@@ -13,7 +13,6 @@
         task.task_type,
         task.map_server,
         task.date_range,
-        task.mark_table,
         task.status,
         task.audit_feedback
         FROM task

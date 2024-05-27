@@ -6,12 +6,10 @@ import com.example.labelMark.mapper.TaskMapper;
 import com.example.labelMark.service.TaskService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.labelMark.vo.TaskInfoDTO;
-import io.swagger.models.auth.In;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -150,8 +148,8 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
     }
 
     @Override
-    public void updateTask(int taskId, int Id) {
-        taskMapper.updateTask(taskId, Id);
+    public void updateTask(int taskId, String markIdStr) {
+        taskMapper.updateTask(taskId, markIdStr);
     }
 
     @Override
@@ -164,6 +162,12 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
     public String getTypeById(int taskId) {
         String taskType = taskMapper.getTypeById(taskId);
         return taskType;
+    }
+
+    @Override
+    public String getMarkIdById(int taskId) {
+        Task task = getById(taskId);
+        return ObjectUtil.isNotNull(task) && task.getMarkId() != null ? task.getMarkId() : null;
     }
 
 

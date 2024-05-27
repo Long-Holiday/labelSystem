@@ -1,18 +1,18 @@
 package com.example.labelMark.controller;
 
+import cn.hutool.core.util.StrUtil;
 import com.example.labelMark.domain.Mark;
+import com.example.labelMark.domain.Type;
 import com.example.labelMark.service.MarkService;
 import com.example.labelMark.service.TaskService;
 import com.example.labelMark.utils.CoordinateConverter;
 import com.example.labelMark.utils.ResultGenerator;
 import com.example.labelMark.vo.constant.Result;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -34,67 +34,73 @@ public class MarkController {
     @Resource
     private TaskService taskService;
 
-    @GetMapping("/saveMarkInfo")
-    public Result saveMarkInfo(@RequestBody Map<String, Object> request){
-        int taskId = (int) request.get("task_id");
-        int userId = (int) request.get("user_id");
-//        int typeId = (int) request.get("type_id");
-        List<Map<String, Object>> geojsonArr = (List<Map<String, Object>>) request.get("jsondataArr");
-        List<String> typeArr = (List<String>) request.get("typeArr");
+    @PostMapping("/saveMarkInfo")
+    public Result saveMarkInfo(@RequestBody Map<String, Object> request) {
+        Integer userId = Integer.valueOf(request.get("userid").toString());
+        int taskId = (Integer) request.get("id");
+        List<Map<String, Object>> typeIdAndMarkInfoArr = (List<Map<String, Object>>) request.get("jsondataArr");
+        List<Map<String, Object>> typeMapArr = (List<Map<String, Object>>) request.get("typeArr");
+        List<Type> typeArr = new ArrayList<>();
+        for (Map typeMap : typeMapArr) {
+            Type type = new Type();
+            Integer typeId = Integer.valueOf(typeMap.get("typeId").toString());
+            String typeName = typeMap.get("typeName").toString();
+            String typeColor = typeMap.get("typeColor").toString();
+            type.setTypeColor(typeColor);
+            type.setTypeName(typeName);
+            type.setTypeId(typeId);
+            typeArr.add(type);
+        }
 
-        Mark mark = new Mark();
-
-        List<Map<String, Object>> geometryArr = CoordinateConverter.convertCoordinate(geojsonArr);
+        List<Map<String, Object>> geometryArr = CoordinateConverter.convertCoordinate(typeIdAndMarkInfoArr);
         // 处理 markInfo
         List<Map<String, Object>> markInfoArr = CoordinateConverter.processMarkInfo(geometryArr, typeArr);
 
 
-//        String[] typeArrStr = typeArr.split(",");
-//        for(String typeId : typeArrStr){
-//
-//        }
-//        for (Map<String, Object> data : dataList) {
-//            String typeId = (String) data.get("typeId");
-////            System.out.println("typeId: " + typeId);
-//            // 过滤，检测typeArr中的typeId与geometryArr中的typeId信息是否相匹配
-//            // 将typeId匹配成功的geomtryArr添加到geomArr中
-//            List<String> geomArr = null;
-//        }
-
-        if(markInfoArr.isEmpty()){
-            System.out.println("无标注信息");
-            for (String ArrId : typeArr) {
+        if (markInfoArr.isEmpty()) {
+            for (Type type : typeArr) {
 //                String typeId = (String) data.get("typeId");
-                markService.deleteMark(taskId, userId, Integer.parseInt(ArrId));
+                markService.deleteMark(taskId, userId, type.getTypeId());
             }
             return ResultGenerator.getSuccessResult("没有标注信息，已删除多余Type");
         }
 
         boolean exist = markService.isMark(taskId, userId);
-        if(exist){
-            System.out.println("存在task为："+taskId+"的mark");
-            for (String ArrId : typeArr) {
-//                String typeId = (String) data.get("typeId");
-                markService.deleteMark(taskId, userId, Integer.parseInt(ArrId));
+        if(exist) {
+            for (Type type : typeArr) {
+                markService.deleteMark(taskId, userId, type.getTypeId());
             }
-            for(Map<String, Object> geom : markInfoArr){
+//            清空任务表中已存在的任务标注
+            taskService.updateTask(taskId, null);
+            for (Map<String, Object> geomAndTypeId : markInfoArr) {
+                Mark mark = new Mark();
                 mark.setTaskId(taskId);
                 mark.setUserId(userId);
-                mark.setGeom(geom.toString());
+                mark.setGeom(geomAndTypeId.get("geom").toString());
+                mark.setStatus(0);
+                mark.setTypeId(Integer.valueOf(geomAndTypeId.get("typeId").toString()));
                 markService.insertMark(mark);
+                String markIdStr = taskService.getMarkIdById(taskId);
+                markIdStr = markIdStr == null ? mark.getId().toString()
+                        : markIdStr + "," + mark.getId().toString();
+                taskService.updateTask(taskId, markIdStr);
             }
             return ResultGenerator.getSuccessResult("有标注信息，覆盖旧mark，建立新mark");
         }else {
-            for(Map<String, Object> geom : markInfoArr){
+            for (Map<String, Object> geomAndTypeId : markInfoArr) {
+                Mark mark = new Mark();
                 mark.setTaskId(taskId);
                 mark.setUserId(userId);
-                mark.setGeom(geom.toString());
+                mark.setGeom(geomAndTypeId.get("geom").toString());
+                mark.setStatus(0);
+                mark.setTypeId(Integer.valueOf(geomAndTypeId.get("typeId").toString()));
                 markService.insertMark(mark);
-                taskService.updateTask(taskId, mark.getId());
+                String markIdStr = taskService.getMarkIdById(taskId);
+                markIdStr = markIdStr == null ? mark.getId().toString()
+                        : markIdStr + "," + mark.getId().toString();
+                taskService.updateTask(taskId, markIdStr);
             }
         }
         return ResultGenerator.getSuccessResult("mark创建成功");
-
-
     }
 }

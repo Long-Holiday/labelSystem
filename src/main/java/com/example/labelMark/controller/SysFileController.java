@@ -217,7 +217,6 @@ public class SysFileController {
         try {
             // 生成文件路径
             Path filePath = Paths.get(UPLOAD_DIR, fileName);
-
             // 删除文件
             Files.delete(filePath);
             System.out.println("删除文件成功！");

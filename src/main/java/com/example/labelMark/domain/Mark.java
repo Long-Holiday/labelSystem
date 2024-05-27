@@ -14,7 +14,7 @@ import javax.validation.constraints.Pattern;
 
 /**
  * <p>
- * 
+ *
  * </p>
  *
  * @author hjw
@@ -28,7 +28,7 @@ public class Mark implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(value = "id", type = IdType.ASSIGN_ID)
+    @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     @ApiModelProperty("任务ID")
@@ -50,9 +50,5 @@ public class Mark implements Serializable {
     @ApiModelProperty("0 未通过，1 通过")
     @TableField("status")
     private Integer status;
-
-    @TableField("mark_id")
-    private String markId;
-
 
 }

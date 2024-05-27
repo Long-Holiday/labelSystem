@@ -15,7 +15,7 @@ import org.apache.ibatis.annotations.*;
 @Mapper
 public interface MarkMapper extends BaseMapper<Mark> {
 
-    @Delete("DELETE FROM mark WHERE task_id=#{taskId} AND user_id=#{userId} AND type_id=#{typeId} AND type_id=#{typeId}")
+    @Delete("DELETE FROM mark WHERE task_id=#{taskId} AND user_id=#{userId} AND type_id=#{typeId} ")
     void deleteMark(int taskId, int userId, int typeId);
 
     @Insert("INSERT INTO mark(task_id, user_id, type_id, geom) values (#{taskId}, #{userId}, #{typeId},#{geom})")
@@ -34,6 +34,4 @@ public interface MarkMapper extends BaseMapper<Mark> {
     @Select("SELECT COUNT(*) FROM mark WHERE task_id=#{taskId}")
     Integer GetTaskIdNum(int taskId);
 
-//    @Insert()
-//    void createMark(String markName);
 }

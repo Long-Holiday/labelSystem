@@ -1,20 +1,33 @@
 package com.example.labelMark.utils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import cn.hutool.core.convert.Convert;
+import cn.hutool.core.map.MapBuilder;
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.StrUtil;
+import com.example.labelMark.domain.Mark;
+import com.example.labelMark.domain.Type;
+import com.example.labelMark.service.TypeService;
+
+import javax.annotation.Resource;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 public class CoordinateConverter {
-//转化坐标信息（geojson）
+    @Resource
+    static
+    TypeService typeService;
+
+    //转化坐标信息（geojson）
     public static List<Map<String, Object>> convertCoordinate(List<Map<String, Object>> geojsonArr) {
         List<Map<String, Object>> geometryArr = new ArrayList<>();
 
         for (Map<String, Object> item : geojsonArr) {
+//            标注多边形信息
             List<Object> extentArr = (List<Object>) item.get("extentArr");
-            String typeid = (String) item.get("typeId");
+            Integer typeId = (Integer) item.get("typeId");
 
             if (extentArr != null) {
                 for (Object feature : extentArr) {
@@ -23,7 +36,7 @@ public class CoordinateConverter {
 
                     Map<String, Object> geometryMap = new HashMap<>();
                     geometryMap.put("geom", itemArr.toString());
-                    geometryMap.put("typeId", typeid);
+                    geometryMap.put("typeId", typeId);
 
                     geometryArr.add(geometryMap);
                 }
@@ -45,23 +58,69 @@ public class CoordinateConverter {
             itemArr.append(feature.toString());
         }
     }
-//处理标注信息
-    public static List<Map<String, Object>> processMarkInfo(List<Map<String, Object>> geometryArr, List<String> typeArr) {
+
+    //处理标注信息
+    public static List<Map<String, Object>> processMarkInfo(List<Map<String, Object>> geometryArr, List<Type> typeArr) {
         List<Map<String, Object>> markInfoArr = new ArrayList<>();
 
-        for (String typeid : typeArr) {
-            List<Map<String, Object>> filteredItems = geometryArr.stream()
+        for (Type type : typeArr) {
+            markInfoArr = geometryArr.stream()
                     //TODO 改一下命名规范typeid--->typeId
-                    .filter(item -> typeid.equals(item.get("typeId")))
+                    .filter(item -> type.getTypeId().equals(item.get("typeId")))
                     .collect(Collectors.toList());
-
-            markInfoArr.addAll(filteredItems);
         }
-
         return markInfoArr;
 
         // 处理 markInfoArr，例如保存数据到数据库
         // ...
+    }
+
+    public static List<Map<String, Object>> convertGeojson(List<Mark> marks) {
+        List<Map<String, Object>> list = new ArrayList<>();
+        marks.forEach(mark -> {
+            List<List<Double[]>> coordinatesArr = new ArrayList<>();
+            String geom = mark.getGeom();
+            String[] geomString = geom.split(", ");
+//            字符串转为数值
+            Double[] doubles = Convert.toDoubleArray(geomString);
+            List<Double[]> doublesList = new ArrayList<>();
+            for (int i = 0; i <= (doubles.length - 1) / 2; i++) {
+                Double[] doubles1 = Arrays.copyOfRange(doubles, i * 2, i * 2 + 2);
+                doublesList.add(doubles1);
+            }
+            coordinatesArr.add(doublesList);
+            List<List<List<Double[]>>> coordinatesPolygonArr = new ArrayList<>();
+            coordinatesPolygonArr.add(coordinatesArr);
+            Map<String, Object> geometry = MapUtil.builder(new HashMap<String, Object>())
+                    .put("type", "MultiPolygon")
+                    .put("coordinates", coordinatesPolygonArr)
+                    .build();
+
+            Map<String, Object> features = MapUtil.builder(new HashMap<String, Object>())
+                    .put("type", "Feature")
+                    .put("geometry", geometry)
+                    .build();
+
+            ArrayList<Map<String, Object>> maps = new ArrayList<>();
+            maps.add(features);
+
+            Map<String, Object> markGeoJson = MapUtil.builder(new HashMap<String, Object>())
+                    .put("typeId", mark.getTypeId())
+                    .put("markGeoJson", new HashMap<String, Object>() {{
+                        put("type", "FeatureCollection");
+                        put("features", maps);
+                        put("crs", new HashMap<String, Object>() {{
+                            put("type", "name");
+                            put("properties",
+                                    new HashMap<String, Object>() {{
+                                        put("name", "EPSG:3857");
+                                    }});
+                        }});
+                    }})
+                    .build();
+            list.add(markGeoJson);
+        });
+        return list;
     }
 }
 

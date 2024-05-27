@@ -1,6 +1,7 @@
 package com.example.labelMark.controller;
 
 import cn.hutool.core.util.ObjectUtil;
+import com.example.labelMark.domain.Mark;
 import com.example.labelMark.domain.Task;
 import com.example.labelMark.domain.TaskDatasetInfo;
 import com.example.labelMark.domain.Type;
@@ -21,9 +22,11 @@ import javax.validation.constraints.Pattern;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.example.labelMark.utils.CoordinateConverter.convertGeojson;
+
 /**
  * <p>
- *  前端控制器
+ * 前端控制器
  * </p>
  *
  * @author hjw
@@ -179,8 +182,7 @@ public class TaskController {
                     .filter(item -> taskid.equals(item.getTaskid()))
                     .collect(Collectors.toList());
         }
-        //TODO 查询是否有标注信息
-
+        List<Mark> marks = markService.getMarkByTaskId(taskid);
         // 计算起始索引
         int startIndex = (current - 1) * pageSize;
         // 计算结束索引，这里需要做边界检查以避免越界
@@ -191,7 +193,7 @@ public class TaskController {
         responce.put("code", 200);
         responce.put("data", result);
         responce.put("success", true);
-        responce.put("markGeoJsonArr", null);
+        responce.put("markGeoJsonArr", convertGeojson(marks));
         responce.put("total", taskname != null || userArr != null ? result.size() : taskCount);
         return responce;
     }
@@ -221,18 +223,18 @@ public class TaskController {
     @PostMapping("/submitTask")
     public Result submitTask(@RequestBody Map<String, Object> map) {
         Integer taskId = (Integer) map.get("taskid");
-//        List<Task> tasks = taskService.selectTaskById(taskId);
-
-            if (markService.GetTaskIdNum(taskId) != 0) {
-                return ResultGenerator.getFailResult("未开始标注");
-            }
-
+        if (markService.GetTaskIdNum(taskId) == 0) {
+            return ResultGenerator.getFailResult("未开始标注");
+        }
         taskService.updateTaskStatus(taskId);
         return ResultGenerator.getSuccessResult("任务提交成功，审核中");
     }
 
-    @PutMapping("/auditTask")
-    public Result auditTask(int taskId, int status, String audit_feedback){
+    @PostMapping("/auditTask")
+    public Result auditTask(@RequestBody Map<String, Object> map) {
+        String audit_feedback = ObjectUtil.toString(map.get("auditfeedback"));
+        Integer status = Integer.valueOf(ObjectUtil.toString(map.get("status")));
+        Integer taskId = Integer.valueOf(ObjectUtil.toString(map.get("taskid")));
         taskService.auditTask(taskId, status, audit_feedback);
         return ResultGenerator.getSuccessResult("编辑任务完成，提交成功");
     }

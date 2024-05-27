@@ -55,6 +55,10 @@ public class Task implements Serializable {
     @TableField("status")
     private Integer status;
 
+    @ApiModelProperty("标记ID拼接字符")
+    @TableField("mark_id")
+    private String markId;
+
     @ApiModelProperty("审核反馈")
     @TableField("audit_feedback")
     private String auditFeedback;

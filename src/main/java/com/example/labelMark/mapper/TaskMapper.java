@@ -70,8 +70,8 @@ public interface TaskMapper extends BaseMapper<Task> {
     @Select("SELECT username FROM task_accepted WHERE task_id=#{taskId}")
     List<String> findUserListByTaskId(int taskId);
 
-    @Update("UPDATE task SET mark_id=#{id} WHERE task_id={taskId}")
-    void updateTask(int taskId, int id);
+    @Update("UPDATE task SET mark_id=#{markIdStr} WHERE task_id=#{taskId}")
+    void updateTask(int taskId, String markIdStr);
 
     @Select("select map_server FROM task where task_id=#{taskId}")
     String getServerById(int taskId);

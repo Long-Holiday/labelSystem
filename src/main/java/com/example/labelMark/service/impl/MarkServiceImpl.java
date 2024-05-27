@@ -1,12 +1,14 @@
 package com.example.labelMark.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.labelMark.domain.Mark;
 import com.example.labelMark.mapper.MarkMapper;
 import com.example.labelMark.service.MarkService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
-import java.sql.ResultSet;
+import javax.annotation.Resource;
+import java.util.List;
 
 /**
  * <p>
@@ -19,6 +21,7 @@ import java.sql.ResultSet;
 @Service
 public class MarkServiceImpl extends ServiceImpl<MarkMapper, Mark> implements MarkService {
 
+    @Resource
     private MarkMapper markMapper;
 
     @Override
@@ -43,11 +46,8 @@ public class MarkServiceImpl extends ServiceImpl<MarkMapper, Mark> implements Ma
 
     @Override
     public void insertMark(Mark mark) {
-//        Mark mark = new Mark();
-//        mark.setTaskId(taskId);
-//        mark.setUserId(userId);
-//        mark.setGeom(geom);
-        markMapper.insertMark(mark);
+        save(mark);
+//        markMapper.insertMark(mark);
     }
 
     @Override
@@ -56,13 +56,18 @@ public class MarkServiceImpl extends ServiceImpl<MarkMapper, Mark> implements Ma
     }
 
     @Override
-    public Integer GetTaskIdNum(int taskId) {
-        Integer num = markMapper.GetTaskIdNum(taskId);
-        return num;
+    public long GetTaskIdNum(int taskId) {
+//        Integer num = markMapper.GetTaskIdNum(taskId);
+        QueryWrapper<Mark> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("task_id", taskId);
+        long count = count(queryWrapper);
+        return count;
     }
 
-//    @Override
-//    public void createMark(String markName) {
-//        markMapper.createMark(markName);
-//    }
+    @Override
+    public List<Mark> getMarkByTaskId(Integer taskId) {
+        QueryWrapper<Mark> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("task_id", taskId);
+        return list(queryWrapper);
+    }
 }
