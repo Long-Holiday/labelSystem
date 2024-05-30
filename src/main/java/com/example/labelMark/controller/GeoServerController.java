@@ -23,8 +23,8 @@ public class GeoServerController {
     @GetMapping("/img")
     public ResponseEntity<byte[]> getGeoserverImg(
             @RequestParam String layerName,
-            @RequestParam double width,
-            @RequestParam double height,
+            @RequestParam int width,
+            @RequestParam int height,
             @RequestParam String bbox,
             @RequestParam String srs) {
         return geoServerService.getGeoserverImg(layerName, width, height, bbox, srs);

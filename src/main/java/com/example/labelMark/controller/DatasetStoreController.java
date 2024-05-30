@@ -2,14 +2,13 @@ package com.example.labelMark.controller;
 
 import com.example.labelMark.domain.DatasetStore;
 import com.example.labelMark.domain.ImageInfo;
+import com.example.labelMark.domain.Mark;
 import com.example.labelMark.domain.Task;
 
-import com.example.labelMark.service.DatasetStoreService;
-import com.example.labelMark.service.GeoServerService;
-import com.example.labelMark.service.TaskService;
-import com.example.labelMark.service.TypeService;
+import com.example.labelMark.service.*;
 import com.example.labelMark.utils.*;
 import com.example.labelMark.vo.constant.Result;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
@@ -46,6 +45,9 @@ public class DatasetStoreController {
 
     @Resource
     private TaskService taskService;
+
+    @Resource
+    private MarkService markService;
 
     @Resource
     private TypeService typeService;
@@ -137,8 +139,8 @@ public class DatasetStoreController {
     public Result deleteDataset(int sampleId, int taskId){
         datasetStoreService.deleteDatastoreById(sampleId);
         String markTaskId = "mark_" + taskId;
-        Path DOWNLOAD_DIR = Paths.get(System.getProperty("user.dir"), "../public/dataset_temp/",markTaskId);
-        Path OUTPUT_DIR = Paths.get(System.getProperty("user.dir"), "../public/dataset/COCO_" + taskId);
+        Path DOWNLOAD_DIR = Paths.get(System.getProperty("user.dir")+ File.separator + "src/main/java/com/example/labelMark/resource/public/dataset_temp/",markTaskId);
+        Path OUTPUT_DIR = Paths.get(System.getProperty("user.dir")+ File.separator + "src/main/java/com/example/labelMark/resource/public/dataset/COCO_" + taskId);
 
         try {
             // 删除 DOWNLOAD_DIR
@@ -175,7 +177,7 @@ public class DatasetStoreController {
     @GetMapping("/downloadDataset")
     public Result downloadDataset(int taskId){
 
-        Path outputDir = Paths.get(System.getProperty("user.dir"), "../public/dataset/COCO_" + taskId);
+        Path outputDir = Paths.get(System.getProperty("user.dir")+ File.separator + "src/main/java/com/example/labelMark/resource/public/dataset/COCO_" + taskId);
 
         // 检查文件读取目录是否存在
         if (!Files.exists(outputDir)) {
@@ -226,51 +228,80 @@ public class DatasetStoreController {
     }
 
     @GetMapping("/generateDataset")
-
-
     public Result generateDataset(int taskId) throws IOException {
 
         Integer idExist = datasetStoreService.hasGenerateDataset(taskId);
-
-        while (idExist != null){
+        System.out.println(idExist);
+        while (idExist != 0){
             System.out.println("该样本已存在");
             return ResultGenerator.getSuccessResult("该样本已存在");
         }
 
-        List<Task> tasks = taskService.selectTaskById(taskId);
+        Task task = taskService.selectTaskById(taskId);
+
+        List<Mark> marks =markService.selectMarkById(taskId);
 
         int sampleId = datasetStoreService.createDataset(taskId);
-
+        System.out.println(sampleId);
         String markTaskId = "mark_" + taskId;
-        Path downloadDir = Paths.get(System.getProperty("user.dir"), "../public/dataset_temp/", markTaskId);
-        Path outputDir = Paths.get(System.getProperty("user.dir"), "../public/dataset/COCO_" + taskId);
-        Path outputDirImage = Paths.get(System.getProperty("user.dir"), "../public/dataset/COCO_" + taskId + "/images");
-        Path outputDirAnnotations = Paths.get(System.getProperty("user.dir"), "../public/dataset/COCO_" + taskId + "/annotations");
+        Path downloadDir = Paths.get(System.getProperty("user.dir")+ File.separator + "src/main/java/com/example/labelMark/resource/public/dataset_temp/", markTaskId);
+        Path outputDir = Paths.get(System.getProperty("user.dir")+ File.separator + "src/main/java/com/example/labelMark/resource/public/dataset/COCO_" + taskId);
+        Path outputDirImage = Paths.get(System.getProperty("user.dir")+ File.separator + "src/main/java/com/example/labelMark/resource/public/dataset/COCO_" + taskId + "/images");
+        Path outputDirAnnotations = Paths.get(System.getProperty("user.dir")+ File.separator + "src/main/java/com/example/labelMark/resource/public/dataset/COCO_" + taskId + "/annotations");
 
         createDirectoryIfNotExists(downloadDir);
         createDirectory(outputDir, "创建coco文件夹");
         createDirectory(outputDirImage, "创建coco/images文件夹");
         createDirectory(outputDirAnnotations, "创建coco/annotations文件夹");
 
-        String jsonStr = geoServerRESTClient.GeoServerString(taskService.getServerById(taskId));
-        // 创建一个JSONObject来解析JSON字符串
-        JSONObject jsonObj = new JSONObject(jsonStr);
-        // 从JSONObject中提取图层信息
-        JSONObject featureType = jsonObj.getJSONObject("featureType");
-        // 提取图层的空间参考系统（SRS）
-        String srs = featureType.getString("srs");
-        // 从图层信息中提取边界框（nativeBoundingBox）
-        JSONObject boundingBox = featureType.getJSONObject("nativeBoundingBox");
+//        String jsonStr = geoServerRESTClient.GeoServerString(taskService.getServerById(taskId));
+//        System.out.println(jsonStr);
+//        // 创建一个JSONObject来解析JSON字符串
+//        JSONObject jsonObj = new JSONObject(jsonStr);
+//        // 从JSONObject中提取图层信息
+//        JSONObject featureType = jsonObj.getJSONObject("featureType");
+//        // 提取图层的空间参考系统（SRS）
+//        String srs = featureType.getString("srs");
+//        // 从图层信息中提取边界框（nativeBoundingBox）
+//        JSONObject boundingBox = featureType.getJSONObject("nativeBoundingBox");
+
+        // 获取图层信息
+        String layerInfo = geoServerRESTClient.getLayerInfo(taskService.getServerById(taskId));
+        if (layerInfo.startsWith("ERROR")) {
+            System.out.println(layerInfo);
+            return ResultGenerator.getFailResult("ERROR");
+        }
+
+        // 使用 Jackson 解析 JSON 响应
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode rootNode = objectMapper.readTree(layerInfo);
+        String coverageHref = rootNode.path("layer").path("resource").path("href").asText();
+
+        // 获取 coverage 详细信息
+        String coverageInfo = geoServerRESTClient.getCoverageInfo(coverageHref);
+        if (coverageInfo.startsWith("ERROR")) {
+            System.out.println(coverageInfo);
+            return ResultGenerator.getFailResult("ERROR");
+        }
+
+        // 解析 coverage 信息
+        JsonNode coverageRootNode = objectMapper.readTree(coverageInfo);
+        String srs = coverageRootNode.path("coverage").path("srs").asText();
+        JsonNode bboxNode = coverageRootNode.path("coverage").path("latLonBoundingBox");
+//        String bbox = bboxNode.path("minx").asText() + "," + bboxNode.path("miny").asText() + "," + bboxNode.path("maxx").asText() + "," + bboxNode.path("maxy").asText();
+
+        System.out.println("SRS: " + srs);
+        System.out.println("Bounding Box: " + bboxNode);
 
         // 提取minx、maxx、miny和maxy的值
-        double minx = boundingBox.getDouble("minx");
-        double maxx = boundingBox.getDouble("maxx");
-        double miny = boundingBox.getDouble("miny");
-        double maxy = boundingBox.getDouble("maxy");
+        double minx = bboxNode.path("minx").asDouble();
+        double maxx = bboxNode.path("maxx").asDouble();
+        double miny = bboxNode.path("miny").asDouble();
+        double maxy = bboxNode.path("maxy").asDouble();
 
         double height = 2048;
         double width = Math.ceil(((maxx - minx) / (maxy - miny)) * height);
-        String bbox = String.format("%f,%f,%f,%f", minx, maxx, miny, maxy);
+        String bbox1 = String.format("%f,%f,%f,%f", minx, maxx, miny, maxy);
 
 
         Map<String, Object> images = new HashMap<>();
@@ -281,33 +312,36 @@ public class DatasetStoreController {
 
         ResponseEntity<byte[]> result = geoServerService.getGeoserverImg(
                 taskService.getServerById(taskId),
-                width,
-                height,
-                bbox,
-                srs
+                256,
+                256,
+                bbox1,
+                "3857"
         );
-
+        System.out.println(result);
         // 区分样本集类型并确定文件路径
-        Path filePath = Paths.get(String.valueOf(outputDirImage), "train_1.jpeg");
-//        if(Objects.equals(taskService.getTypeById(taskId), "地物分类")){
-//            filePath = Paths.get(String.valueOf(outputDirImage), "val_1.jpeg");
-//        }else {
-//            filePath = Paths.get(String.valueOf(outputDirImage), "train_1.jpeg");
-//        }
+        Path filePath = Paths.get(String.valueOf(outputDirImage), "train_"+taskId+".tif");
 
         // 将响应流中的数据写入文件
-        try (FileOutputStream fos = new FileOutputStream(String.valueOf(filePath))) {
-            fos.write(Objects.requireNonNull(result.getBody()));
+        try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
+            byte[] body = result.getBody();
+            if (body != null && body.length > 0) {
+                fos.write(body);
+                System.out.println("Image saved successfully to " + filePath);
+            } else {
+                System.err.println("No data received from GeoServer.");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Error writing file: " + e.getMessage());
         }
 
-        createDirectory(outputDirAnnotations, "创建coco/annotations文件夹");
 
-        Map<String, Double> tifParams = null;
+        Map<String, Double> tifParams = new HashMap<>();;
         tifParams.put("minx", Math.abs(minx));
         tifParams.put("maxy", Math.abs(maxy));
         tifParams.put("serverHeight", Math.abs(maxy) - Math.abs(miny));
         tifParams.put("serverWidth", Math.abs(maxx) - Math.abs(minx));
-        Map<String, Double> dimensions = null;
+        Map<String, Double> dimensions = new HashMap<>();;
         dimensions.put("width", width);
         dimensions.put("height", height);
 
@@ -315,25 +349,26 @@ public class DatasetStoreController {
         List<Map<String, Object>> annotations = new ArrayList<>();
 
         // 将tasks集合转为Map集合
-        List<Map<String, Object>> task = DomainToMapList.convertDomainListToMapList(tasks);
-        List<Map<String, Object>> segmentationArr = CovertCoordinateToPixel.covertCoordinateToPixel(task, tifParams, dimensions);
+        List<Map<String, Object>> mark = DomainToMapList.convertDomainListToMapList(marks);
+        List<Map<String, Object>> segmentationArr = CovertCoordinateToPixel.covertCoordinateToPixel(mark, tifParams, dimensions);
 
 
 //        if(Objects.equals(taskService.getTypeById(taskId), "地物分类")){
 //            GenerateStuffImg.generateStuffImg((int) Math.round(width), (int) Math.round(height), segmentationArr, filePath.toString());
 //
 //        }
-        GenerateStuffImg.generateStuffImg((int) Math.round(width), (int) Math.round(height), segmentationArr, filePath.toString());
+        Path StuffImgPath = Paths.get(String.valueOf(outputDirImage), "train_"+taskId+".PNG");
+        GenerateStuffImg.generateStuffImg((int) Math.round(width), (int) Math.round(height), segmentationArr, StuffImgPath.toString());
 
         int i;
         for(i=0; i<segmentationArr.size(); i++){
-            String geom = (String) segmentationArr.get(i).get("geom");
+//            String geom = (String) segmentationArr.get(i).get("geom");
 //            Integer taskId = (Integer) segmentationArr.get(i).get("task_id");
             Integer userId = (Integer) segmentationArr.get(i).get("user_id");
             Integer typeId = (Integer) segmentationArr.get(i).get("type_id");
-            String typeColor = (String) segmentationArr.get(i).get("typeColor");
+            String typeColor = (String) segmentationArr.get(i).get("type_color");
             List<Double> segmentation = (List<Double>) segmentationArr.get(i).get("segmentation");
-            Double[] bbox1 = (Double[]) segmentationArr.get(i).get("bbox");
+            double[] bbox2 = (double[]) segmentationArr.get(i).get("bbox");
             String geoBbox = (String) segmentationArr.get(i).get("geoBbox");
 
 
@@ -353,13 +388,13 @@ public class DatasetStoreController {
             Map<String, Object> annotation = new HashMap<>();
             annotation.put("category_id", typeId);
             annotation.put("img_id", 1);
-            annotation.put("bbox", bbox1);
+            annotation.put("bbox", bbox2);
             annotation.put("segmentation", segmentation);
             annotations.add(annotation);
 
             geoServerService.getGeoserverImg(taskService.getServerById(taskId), 256, 256, geoBbox, "EPSG:3857");
 
-            Path localFilePath = Paths.get(String.valueOf(downloadDir), markTaskId);
+            Path localFilePath = Paths.get(String.valueOf(downloadDir), "mark_" + taskId+"_" + i);
             // 将响应流中的数据写入文件
             try (FileOutputStream fos = new FileOutputStream(String.valueOf(localFilePath))) {
                 fos.write(Objects.requireNonNull(result.getBody()));

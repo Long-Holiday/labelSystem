@@ -101,9 +101,9 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
     }
 
     @Override
-    public List<Task> selectTaskById(int taskId) {
-        List<Task> tasks = taskMapper.selectTaskById(taskId);
-        return tasks;
+    public Task selectTaskById(int taskId) {
+        Task task = taskMapper.selectTaskById(taskId);
+        return task;
     }
 
     @Override

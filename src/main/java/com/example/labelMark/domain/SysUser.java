@@ -30,23 +30,23 @@ public class SysUser implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @ApiModelProperty("用户标识符")
-    @TableId(value = "userid", type = IdType.AUTO)
+    @TableId(value = "user_id", type = IdType.AUTO)
     private Integer userid;
 
     @TableField("username")
     private String username;
 
-    @TableField("userpassword")
+    @TableField("user_password")
     private String userpassword;
     @ApiModelProperty("是否是管理员")
-    @TableField("isadmin")
+    @TableField("is_admin")
     @NonNull
     private Integer isadmin;
     @ApiModelProperty("完成任务数量")
-    @TableField("finishednum")
+    @TableField("finished_num")
     private Integer finishednum;
     @ApiModelProperty("未完成任务数")
-    @TableField("unfinishednum")
+    @TableField("unfinished_num")
     private Integer unfinishednum;
 
 

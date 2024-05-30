@@ -8,9 +8,9 @@ spring:
       matching-strategy: ant_path_matcher
   # 数据源配置，用于连接 POSTGRESQL 数据库
   datasource:
-    url: jdbc:postgresql://localhost:5432/label  # POSTGRESQL 数据库的 JDBC URL
+    url: jdbc:postgresql://localhost:5432/postgres  # POSTGRESQL 数据库的 JDBC URL
     username: postgres  # 数据库用户名
-    password: 88888888  # 数据库密码
+    password: hjw123  # 数据库密码
     driver-class-name: org.postgresql.Driver  # POSTGRESQL JDBC 驱动类名
     # Spring Security 配置，用于 JWT 身份验证
   security:
@@ -25,7 +25,7 @@ spring:
   redis:
     host: localhost   # Redis服务器主机名
     port: 6379        # Redis服务器端口
-    password: 123321         # Redis服务器密码（如果有的话）
+    password:          # Redis服务器密码（如果有的话）
     database: 0       # Redis数据库索引，默认是0
 
 
@@ -54,4 +54,3 @@ logging:
   #    org:
   #      springframework:
   #        security: DEBUG
-  config: F:/PG-project/labelMark/src/main/resources/logback.xml

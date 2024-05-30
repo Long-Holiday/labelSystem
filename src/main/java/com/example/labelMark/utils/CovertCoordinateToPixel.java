@@ -12,14 +12,21 @@ import java.util.Map;
 
 public class CovertCoordinateToPixel {
 
-    @Resource
     private static TypeService typeService;
+
+    public static void setTypeService(TypeService typeService) {
+        CovertCoordinateToPixel.typeService = typeService;
+    }
 
     // 将一组地理坐标转换为像素坐标，并生成相应的边界框和分割数组。
     public static List<Map<String, Object>> covertCoordinateToPixel(
             List<Map<String, Object>> arr,
             Map<String, Double> tifParams,
             Map<String, Double> dimensions) {
+
+        if (typeService == null) {
+            throw new IllegalStateException("TypeService has not been initialized.");
+        }
 
         double tifMinx = tifParams.get("minx");
         double tifMaxy = tifParams.get("maxy");
@@ -32,10 +39,10 @@ public class CovertCoordinateToPixel {
 
         for (Map<String, Object> item : arr) {
             String geom = (String) item.get("geom");
-            Integer taskId = (Integer) item.get("task_id");
-            Integer userId = (Integer) item.get("user_id");
-            Integer typeId = (Integer) item.get("type_id");
-            String typeColor = typeService.getColorById((Integer) item.get("type_id"));
+            Integer taskId = (Integer) item.get("taskId");
+            Integer userId = (Integer) item.get("userId");
+            Integer typeId = (Integer) item.get("typeId");
+            String typeColor = typeService.getColorById((Integer) item.get("typeId"));
             //初始化 resultArr（用于存储转换后的像素坐标）
             // xArray 和 yArray（用于存储原始地理坐标的 X 和 Y 值）
             String[] itemArr = geom.split(",");
@@ -69,6 +76,7 @@ public class CovertCoordinateToPixel {
             double pixMaxy = ((tifMaxy - maxY) / serverHeight) * height;
 
             Map<String, Object> bboxItem = new HashMap<>();
+            bboxItem.put("geom", geom);
             bboxItem.put("task_id", taskId);
             bboxItem.put("user_id", userId);
             bboxItem.put("type_id", typeId);

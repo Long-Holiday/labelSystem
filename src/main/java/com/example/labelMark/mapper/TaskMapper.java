@@ -44,7 +44,7 @@ public interface TaskMapper extends BaseMapper<Task> {
     void updateTaskById(int taskId, String taskName, String dateRange, String taskType, String mapServer);
 
     @Select("SELECT * FROM task WHERE task_id = #{taskId}")
-    List<Task> selectTaskById(int taskId);
+    Task selectTaskById(int taskId);
 
     @Update("UPDATE task SET status=0 WHERE task_id = #{taskId}")
     void updateTaskStatus(int taskId);

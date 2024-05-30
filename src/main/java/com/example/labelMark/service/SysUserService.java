@@ -25,7 +25,7 @@ public interface SysUserService extends IService<SysUser> {
 
     SysUser findByUsername(String username);
 
-    SysUser findByUserId(Integer userid);
+    SysUser findByUserId(Integer userId);
 
     boolean resetPassword(SysUser user);
 

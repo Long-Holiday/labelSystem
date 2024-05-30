@@ -13,14 +13,14 @@ public class GeoServerRESTClient {
 
     private static final String GEOSERVER_REST_URL = "http://localhost:8080/geoserver/rest";
     private static final String WORKSPACE = "LUU";
-    private static final String DATASTORE = "country";
-    private static final String LAYER = "country";
+    private static final String DATASTORE = "test";
+    private static final String LAYER = "airport";
     private static final String USERNAME = "admin";
     private static final String PASSWORD = "geoserver";
-
-    public String GeoServerString (String filename) {
+    private static final String LAYERNAME = "airport";
+    public String getLayerInfo (String filename) {
         try {
-            String layersEndpoint = GEOSERVER_REST_URL + "/workspaces/" + WORKSPACE + "/datastores/" + DATASTORE + "/featuretypes/"+filename+".json";
+            String layersEndpoint = GEOSERVER_REST_URL + "/layers/" + WORKSPACE + ":" + LAYERNAME + ".json";
             String auth = USERNAME + ":" + PASSWORD;
             String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
 
@@ -50,5 +50,35 @@ public class GeoServerRESTClient {
             return "ERROR";
         }
 
+    }
+
+    public String getCoverageInfo(String filename) {
+        try {
+            String auth = USERNAME + ":" + PASSWORD;
+            String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
+
+            URL coverageUrl = new URL(filename);
+            HttpURLConnection coverageCon = (HttpURLConnection) coverageUrl.openConnection();
+            coverageCon.setRequestMethod("GET");
+            coverageCon.setRequestProperty("Authorization", "Basic " + encodedAuth);
+
+            int coverageResponseCode = coverageCon.getResponseCode();
+            if (coverageResponseCode == HttpURLConnection.HTTP_OK) {
+                BufferedReader coverageIn = new BufferedReader(new InputStreamReader(coverageCon.getInputStream()));
+                String inputLine;
+                StringBuilder coverageResponse = new StringBuilder();
+                while ((inputLine = coverageIn.readLine()) != null) {
+                    coverageResponse.append(inputLine);
+                }
+                coverageIn.close();
+
+                return coverageResponse.toString();
+            } else {
+                return "GET request for coverage not worked. Response code: " + coverageResponseCode;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "ERROR: " + e.getMessage();
+        }
     }
 }

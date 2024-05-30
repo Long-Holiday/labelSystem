@@ -15,5 +15,5 @@ import java.util.Map;
 public interface GeoServerService {
     String getGeoserverInfo(String mapServer);
 
-    ResponseEntity<byte[]> getGeoserverImg(String layerName, double width, double height, String bbox, String srs);
+    ResponseEntity<byte[]> getGeoserverImg(String layerName, int width, int height, String bbox, String srs);
 }

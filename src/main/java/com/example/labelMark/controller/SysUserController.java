@@ -59,13 +59,14 @@ public class SysUserController {
         String username = ObjectUtil.toString(map.get("userName"));
         String password = ObjectUtil.toString(map.get("userPassword"));
         SysUser user = SysUserService.findByUsername(username);
+        System.out.println(username);
         if (ObjectUtil.isNotNull(user)) {
             return ResultGenerator.getFailResult("用户已存在");
         }
         SysUser SysUser = new SysUser();
         SysUser.setUsername(username);
 //        不为空，默认不是
-        SysUser.setIsadmin(0);
+        SysUser.setIsadmin(1);
         SysUser.setUserpassword(new BCryptPasswordEncoder().encode(password));
         int isCreated = SysUserService.createUser(SysUser);
         if (isCreated > 0) {

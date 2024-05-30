@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.sql.ResultSet;
 import java.util.List;
 
 /**
@@ -64,6 +65,16 @@ public class MarkServiceImpl extends ServiceImpl<MarkMapper, Mark> implements Ma
         return count;
     }
 
+    @Override
+    public List<Mark> selectMarkById(int taskId) {
+        List<Mark> marks = markMapper.selectMarkById(taskId);
+        return marks;
+    }
+
+//    @Override
+//    public void createMark(String markName) {
+//        markMapper.createMark(markName);
+//    }
     @Override
     public List<Mark> getMarkByTaskId(Integer taskId) {
         QueryWrapper<Mark> queryWrapper = new QueryWrapper<>();

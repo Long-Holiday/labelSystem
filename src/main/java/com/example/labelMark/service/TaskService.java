@@ -30,7 +30,7 @@ public interface TaskService extends IService<Task> {
 
     void deleteTaskById(int taskId);
 
-    List<Task> selectTaskById(int taskId);
+    Task selectTaskById(int taskId);
 
     void updateTaskStatus(int taskId);
 

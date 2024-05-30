@@ -4,6 +4,8 @@ import com.example.labelMark.domain.Mark;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.*;
 
+import java.util.List;
+
 /**
  * <p>
  *  Mapper 接口
@@ -34,4 +36,9 @@ public interface MarkMapper extends BaseMapper<Mark> {
     @Select("SELECT COUNT(*) FROM mark WHERE task_id=#{taskId}")
     Integer GetTaskIdNum(int taskId);
 
+    @Select("SELECT * FROM mark WHERE task_id=#{taskId}")
+    List<Mark> selectMarkById(int taskId);
+
+//    @Insert()
+//    void createMark(String markName);
 }
