@@ -1,6 +1,7 @@
 package com.example.labelMark.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.example.labelMark.domain.Mark;
 import com.example.labelMark.mapper.MarkMapper;
 import com.example.labelMark.service.MarkService;
@@ -46,9 +47,8 @@ public class MarkServiceImpl extends ServiceImpl<MarkMapper, Mark> implements Ma
     }
 
     @Override
-    public void insertMark(Mark mark) {
-        save(mark);
-//        markMapper.insertMark(mark);
+    public void insertOrUpdateMark(Mark mark) {
+        saveOrUpdate(mark);
     }
 
     @Override
@@ -71,14 +71,35 @@ public class MarkServiceImpl extends ServiceImpl<MarkMapper, Mark> implements Ma
         return marks;
     }
 
-//    @Override
-//    public void createMark(String markName) {
-//        markMapper.createMark(markName);
-//    }
     @Override
     public List<Mark> getMarkByTaskId(Integer taskId) {
         QueryWrapper<Mark> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("task_id", taskId);
         return list(queryWrapper);
     }
+    @Override
+    public List<Mark> getTotal() {
+        return list();
+    }
+    @Override
+    public Mark selectByMarkId(Integer markId) {
+        return getById(markId);
+    }
+
+    @Override
+    public boolean deleteMarks(List<Mark> total) {
+        for (Mark mark:total){
+            int i = markMapper.deleteById(mark);
+            if (i<=0){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public void deleteMarkByTaskAndUser(int taskId, int userId) {
+        markMapper.deleteMarkByTaskAndUserId(taskId, userId);
+    }
+
 }

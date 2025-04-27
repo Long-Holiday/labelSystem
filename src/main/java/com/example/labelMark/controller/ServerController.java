@@ -45,7 +45,7 @@ import java.util.Map;
 @RequestMapping("/server")
 public class ServerController {
 
-    private static final String GEOSERVER_REST_URL = "http://localhost:8080/geoserver/rest";
+    private static final String GEOSERVER_REST_URL = "http://localhost:8081/geoserver/rest";
     private static final String DOWNLOAD_DIR = "src/main/java/com/example/labelMark/resource/img"; // 指定下载目录
 
     private static final String USERNAME = "admin";
@@ -87,8 +87,10 @@ public class ServerController {
             String serdesc = map.get("serdesc").toString();
             String sername = map.get("sername").toString();
             String seryear = map.get("seryear").toString();
+            String publishUrl = map.get("publishUrl").toString();
             //创建服务
             Server server = new Server();
+            server.setPublishUrl(publishUrl);
             server.setPublisher(publisher);
             server.setPublishTime(publishtime);
             server.setSerDesc(serdesc);

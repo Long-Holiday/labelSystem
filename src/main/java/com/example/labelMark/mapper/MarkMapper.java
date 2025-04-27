@@ -39,6 +39,10 @@ public interface MarkMapper extends BaseMapper<Mark> {
     @Select("SELECT * FROM mark WHERE task_id=#{taskId}")
     List<Mark> selectMarkById(int taskId);
 
+    //根据 taskId 和 userId 删除标记
+    @Delete("DELETE FROM mark WHERE task_id=#{taskId} AND user_id=#{userId}")
+    void deleteMarkByTaskAndUserId(@Param("taskId") int taskId, @Param("userId") int userId);
+
 //    @Insert()
 //    void createMark(String markName);
 }

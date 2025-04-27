@@ -7,7 +7,7 @@
         task_accepted.id,
         task_accepted.type_arr,
         sys_user.username AS username,
-        sys_user.userid AS userid,
+        sys_user.user_id AS userid,
         task.task_id,
         task.task_name,
         task.task_type,

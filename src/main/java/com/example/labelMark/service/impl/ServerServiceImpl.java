@@ -3,6 +3,7 @@ package com.example.labelMark.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.labelMark.domain.Server;
 import com.example.labelMark.mapper.ServerMapper;
+import com.example.labelMark.service.GeoServerService;
 import com.example.labelMark.service.ServerService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;

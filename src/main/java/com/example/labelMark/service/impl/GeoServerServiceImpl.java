@@ -26,7 +26,7 @@ import java.util.Map;
 public class GeoServerServiceImpl implements GeoServerService {
 
 //    @Value("${geoserver.url}")
-    private String geoserverUrl = "http://localhost:8080/geoserver";
+    private String geoserverUrl = "http://localhost:8081/geoserver";
 
     @Value("${geoserver.username}")
     private String username;

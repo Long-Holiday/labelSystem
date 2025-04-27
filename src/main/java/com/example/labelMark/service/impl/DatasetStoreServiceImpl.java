@@ -3,7 +3,6 @@ package com.example.labelMark.service.impl;
 import com.example.labelMark.domain.DatasetStore;
 import com.example.labelMark.domain.ImageInfo;
 import com.example.labelMark.domain.SampleImg;
-import com.example.labelMark.domain.TaskDatasetInfo;
 import com.example.labelMark.mapper.DatasetStoreMapper;
 import com.example.labelMark.mapper.SampleImgMapper;
 import com.example.labelMark.service.DatasetStoreService;
@@ -67,13 +66,13 @@ public class DatasetStoreServiceImpl extends ServiceImpl<DatasetStoreMapper, Dat
     }
 
     @Override
-    public int getTotalImgNumBySampleId(int sampleId) {
+    public int getTotalImgNumBySampleId(Integer sampleId) {
         int num = datasetStoreMapper.getTotalImgNumBySampleId(sampleId);
         return num;
     }
 
     @Override
-    public List<ImageInfo> findImgSrcTypeNameBySampleId(int sampleId, int pageSize, int current) {
+    public List<ImageInfo> findImgSrcTypeNameBySampleId(Integer sampleId, int pageSize, int current) {
         List<ImageInfo> imageInfo = datasetStoreMapper.findImgSrcTypeNameBySampleId(sampleId, pageSize, current);
         return imageInfo;
     }

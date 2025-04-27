@@ -39,15 +39,25 @@ public interface DatasetStoreMapper extends BaseMapper<DatasetStore> {
             "WHERE task.task_id = #{taskId}")
     List<Map<String, Object>> findDatasetByTaskId(@Param("taskId") int taskId);
 
-    @Select("SELECT COUNT(*) as count FROM sample_img WHERE sample_id = #{sampleId}")
-    int getTotalImgNumBySampleId(int sampleId);
+    @Select({"<script>",
+            "SELECT COUNT(*) as count " ,
+            "FROM sample_img ",
+            "<when test='sampleId!=null'>",
+            "WHERE sample_id = #{sampleId}",
+            "</when>",
+            "</script>"})
+    int getTotalImgNumBySampleId(Integer sampleId);
 
-    @Select("SELECT sample_img.img_src, type.type_name " +
-            "FROM sample_img " +
-            "JOIN type ON sample_img.type_id = type.type_id " +
-            "WHERE sample_img.sample_id = #{sampleId} " +
-            "LIMIT #{pageSize} OFFSET #{current}")
-    List<ImageInfo> findImgSrcTypeNameBySampleId(int sampleId, int pageSize, int current);
+    @Select({"<script>",
+            "SELECT sample_img.img_src, type.type_name ",
+            "FROM sample_img",
+            "JOIN type ON sample_img.type_id = type.type_id ",
+            "<when test='sampleId!=null'>",
+            "WHERE sample_img.sample_id = #{sampleId}",
+            "</when>",
+            "LIMIT #{pageSize} OFFSET #{current} ",
+            "</script>"})
+    List<ImageInfo> findImgSrcTypeNameBySampleId(Integer sampleId, int pageSize, int current);
 
     @Update("update dataset_store SET is_public=#{isPublic} WHERE sample_id=#{sampleId}")
     void updateDatasetStatusBySampleId(int isPublic, int sampleId);

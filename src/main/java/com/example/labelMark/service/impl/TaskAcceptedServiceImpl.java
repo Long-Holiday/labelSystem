@@ -1,5 +1,6 @@
 package com.example.labelMark.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.example.labelMark.domain.TaskAccepted;
 import com.example.labelMark.mapper.TaskAcceptedMapper;
 import com.example.labelMark.service.TaskAcceptedService;
@@ -28,15 +29,14 @@ public class TaskAcceptedServiceImpl extends ServiceImpl<TaskAcceptedMapper, Tas
         taskAccepted.setTaskId(taskId);
         taskAccepted.setUsername(username);
         taskAccepted.setTypeArr(typeArr);
-        boolean isSave = save(taskAccepted);
-//        taskAcceptedMapper.createTaskAccept(taskId, username, typeArr);
+        UpdateWrapper<TaskAccepted> wrapper=new UpdateWrapper<>();
+        wrapper.eq("task_id",taskId).eq("username",username);
+        boolean isSave = saveOrUpdate(taskAccepted,wrapper);
         return isSave;
     }
 
     @Override
     public void deleteTaskAcceptByTaskId(int id) {
-
-
         taskAcceptedMapper.deleteTaskAcceptByTaskId(id);
 
     }

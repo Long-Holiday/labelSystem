@@ -130,9 +130,9 @@ public class SysFileController {
 
     @PostMapping("/upload")
     public Result upload(@RequestParam("file") MultipartFile file,
-                                         @RequestParam("fileName") String fileName,
-                                         @RequestParam("chunkNumber") int chunkNumber,
-                                         @RequestParam("totalChunks") int totalChunks) throws IOException {
+                         @RequestParam("fileName") String fileName,
+                         @RequestParam("chunkNumber") int chunkNumber,
+                         @RequestParam("totalChunks") int totalChunks) throws IOException {
 
 
         File uploadDirectory = new File(UPLOAD_DIR);

@@ -3,7 +3,6 @@ package com.example.labelMark.service;
 import com.example.labelMark.domain.DatasetStore;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.labelMark.domain.ImageInfo;
-import com.example.labelMark.domain.TaskDatasetInfo;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -30,9 +29,9 @@ public interface DatasetStoreService extends IService<DatasetStore> {
 
     void deleteDatastoreById(int sampleId);
 
-    int getTotalImgNumBySampleId(int sampleId);
+    int getTotalImgNumBySampleId(Integer sampleId);
 
-    List<ImageInfo> findImgSrcTypeNameBySampleId(int sampleId, int pageSize, int current);
+    List<ImageInfo> findImgSrcTypeNameBySampleId(Integer sampleId, int pageSize, int current);
 
     Integer hasGenerateDataset(int taskId);
 }

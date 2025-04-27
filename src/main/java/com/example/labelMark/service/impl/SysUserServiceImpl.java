@@ -64,7 +64,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Override
     public long getUsersCountByAdmin(int isAdmin) {
         QueryWrapper<SysUser> queryWrapper = new QueryWrapper();
-        queryWrapper.eq("isAdmin", isAdmin);
+        queryWrapper.eq("is_admin", isAdmin);
         long count = count(queryWrapper);
         return count;
     }
@@ -79,13 +79,13 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         Page<SysUser> userPage = new Page<SysUser>().setCurrent(current).setSize(pageSize);
         QueryWrapper<SysUser> SysUserQueryWrapper = new QueryWrapper<>();
         if (ObjectUtil.isNotNull(userid)) {
-            SysUserQueryWrapper.eq("userid", userid);
+            SysUserQueryWrapper.eq("user_id", userid);
         }
         if (StrUtil.isNotBlank(username)) {
             SysUserQueryWrapper.eq("username", username);
         }
-        SysUserQueryWrapper.eq("isadmin", isAdmin);
-        SysUserQueryWrapper.orderBy(true, true, "userid");
+        SysUserQueryWrapper.eq("is_admin", isAdmin);
+        SysUserQueryWrapper.orderBy(true, true, "user_id");
         return page(userPage, SysUserQueryWrapper);
     }
 

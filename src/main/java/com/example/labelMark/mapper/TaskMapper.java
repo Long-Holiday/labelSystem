@@ -28,7 +28,7 @@ public interface TaskMapper extends BaseMapper<Task> {
 
     @Select({"<script>",
             "select task_accepted.id,task_accepted.type_arr,sys_user.username as username",
-            "sys_user.userid as userid,task.* from task join task_accepted on task.taskid=task_accepted.taskid",
+            "sys_user.user_id as userid,task.* from task join task_accepted on task.taskid=task_accepted.taskid",
             "join sys_user on  task_accepted.username=sys_user.username ",
             "<when test='username!=null'>",
             "where sys_user.username=#{username}",

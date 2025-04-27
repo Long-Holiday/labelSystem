@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -72,7 +73,9 @@ public class DatasetStoreController {
 
 
     @GetMapping("/getDataSet")
-    public Result getDataSet(String username, int isAdmin, int isPublic) {
+    public Result getDataSet(@RequestParam String username
+            ,@RequestParam Integer isAdmin
+            ,@RequestParam(required = false) Integer isPublic) {
 
         List<Map<String, Object>> taskIdArr;
 
@@ -119,7 +122,9 @@ public class DatasetStoreController {
 
 
     @GetMapping("/getSampleImageList")
-    public Result getSampleImageList(int pageSize, int current, int sampleId){
+    public Result getSampleImageList(@RequestParam int pageSize
+            ,@RequestParam int current
+            ,@RequestParam(required = false) Integer sampleId){
         int total = datasetStoreService.getTotalImgNumBySampleId(sampleId);
         List<ImageInfo> imageInfos = datasetStoreService.findImgSrcTypeNameBySampleId(sampleId, pageSize, current);
         Map<String, Object> res = new HashMap<>();
@@ -129,8 +134,10 @@ public class DatasetStoreController {
         return ResultGenerator.getSuccessResult(res);
     }
 
-    @PutMapping("/setDatasetStatus")
-    public Result setDatasetStatus(int isPublic, int sampleId){
+    @PostMapping("/setDatasetStatus")
+    public Result setDatasetStatus(@RequestBody Map<String,Object> map){
+        Integer isPublic = Integer.valueOf(map.get("isPublic").toString());
+        Integer sampleId = Integer.valueOf(map.get("sampleId").toString());
         datasetStoreService.updateDatasetStatusBySampleId(isPublic, sampleId);
         return ResultGenerator.getSuccessResult();
     }
@@ -174,8 +181,8 @@ public class DatasetStoreController {
     }
 
 
-    @GetMapping("/downloadDataset")
-    public Result downloadDataset(int taskId){
+    @GetMapping("/download")
+    public Result downloadDataset(@RequestParam(required = false,value = "taskid") Integer taskId, HttpServletResponse response){
 
         Path outputDir = Paths.get(System.getProperty("user.dir")+ File.separator + "src/main/java/com/example/labelMark/resource/public/dataset/COCO_" + taskId);
 
@@ -187,12 +194,13 @@ public class DatasetStoreController {
         try {
             // 创建压缩文件的路径
             Path zipPath = Paths.get(System.getProperty("user.dir"), "COCO.zip");
-            createDirectory(zipPath, "创建COCO.zip文件路径");
+            Files.createFile(zipPath);
+//            createDirectory(zipPath, "创建COCO.zip文件路径");
             // 计算输出路径
 //            Path outputPath = Paths.get(outputDir, "COCO_" + taskId);
 
-            // 创建压缩包
-            try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipPath))) {
+            // 创建压缩包  Files.newOutputStream(zipPath)
+            try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(String.valueOf(zipPath)))) {
                 // 读取输出路径下的所有文件和子文件夹
                 Files.walk(outputDir).filter(path -> !Files.isDirectory(path)).forEach(path -> {
                     ZipEntry zipEntry = new ZipEntry(outputDir.relativize(path).toString());
@@ -213,10 +221,11 @@ public class DatasetStoreController {
             Files.delete(zipPath);
 
             // 设置响应头
-            HttpHeaders headers = new HttpHeaders();
+            /*HttpHeaders headers = new HttpHeaders();
             headers.add("Content-Disposition", "attachment; filename=files.zip");
-            headers.add("Content-Type", "application/zip");
-
+            headers.add("Content-Type", "application/zip");*/
+            response.addHeader("Content-Disposition", "attachment; filename=files.zip");
+            response.addHeader("Content-Type", "application/zip");
             // 返回压缩文件的字节数组
             return ResultGenerator.getSuccessResult(zipContent);
 
@@ -227,12 +236,12 @@ public class DatasetStoreController {
 
     }
 
-    @GetMapping("/generateDataset")
-    public Result generateDataset(int taskId) throws IOException {
-
+    @PostMapping("/generateDataset")
+    public Result generateDataset(@RequestBody Map<String,Object> map) throws IOException {
+        Integer taskId = Integer.valueOf(map.get("taskid").toString());
         Integer idExist = datasetStoreService.hasGenerateDataset(taskId);
         System.out.println(idExist);
-        while (idExist != 0){
+        if (idExist != 0){
             System.out.println("该样本已存在");
             return ResultGenerator.getSuccessResult("该样本已存在");
         }
@@ -287,7 +296,10 @@ public class DatasetStoreController {
         // 解析 coverage 信息
         JsonNode coverageRootNode = objectMapper.readTree(coverageInfo);
         String srs = coverageRootNode.path("coverage").path("srs").asText();
-        JsonNode bboxNode = coverageRootNode.path("coverage").path("latLonBoundingBox");
+
+        //更正geoserver坐标系，latLonBoundingBox为4326，nativeBoundingBox为3857
+//        JsonNode bboxNode = coverageRootNode.path("coverage").path("latLonBoundingBox");
+        JsonNode bboxNode = coverageRootNode.path("coverage").path("nativeBoundingBox");
 //        String bbox = bboxNode.path("minx").asText() + "," + bboxNode.path("miny").asText() + "," + bboxNode.path("maxx").asText() + "," + bboxNode.path("maxy").asText();
 
         System.out.println("SRS: " + srs);
@@ -301,22 +313,35 @@ public class DatasetStoreController {
 
         double height = 2048;
         double width = Math.ceil(((maxx - minx) / (maxy - miny)) * height);
-        String bbox1 = String.format("%f,%f,%f,%f", minx, maxx, miny, maxy);
+
+        // 修正 minx, miny, maxx, maxy 顺序
+//        String bbox1 = String.format("%f,%f,%f,%f", minx, maxx, miny, maxy);
+        String bbox1 = String.format("%f,%f,%f,%f", minx, miny, maxx, maxy);
+
+        System.out.println("Parsed BBOX from coverageInfo: minx=" + minx + ", maxx=" + maxx + ", miny=" + miny + ", maxy=" + maxy);
+        System.out.println("Formatted BBOX string: " + bbox1);
 
 
         Map<String, Object> images = new HashMap<>();
-        images.put("file_name", "train_1.jpeg");
+        images.put("file_name", "train_" + taskId + ".jpeg");
         images.put("id", 1);
         images.put("width", width);
         images.put("height", height);
 
         ResponseEntity<byte[]> result = geoServerService.getGeoserverImg(
                 taskService.getServerById(taskId),
-                256,
-                256,
+                (int) Math.round(width),  // 使用计算出的宽度
+                (int) Math.round(height), // 使用计算出的高度
                 bbox1,
-                "3857"
+                srs // 使用从 GeoServer 获取的 srs
         );
+//        ResponseEntity<byte[]> result = geoServerService.getGeoserverImg(
+//                taskService.getServerById(taskId),
+//                256,
+//                256,
+//                bbox1,
+//                "EPSG:3857"
+//        );
         System.out.println(result);
         // 区分样本集类型并确定文件路径
         Path filePath = Paths.get(String.valueOf(outputDirImage), "train_"+taskId+".tif");
@@ -394,7 +419,7 @@ public class DatasetStoreController {
 
             geoServerService.getGeoserverImg(taskService.getServerById(taskId), 256, 256, geoBbox, "EPSG:3857");
 
-            Path localFilePath = Paths.get(String.valueOf(downloadDir), "mark_" + taskId+"_" + i);
+            Path localFilePath = Paths.get(String.valueOf(downloadDir), "mark_" + taskId+"_" + i + ".jpeg");
             // 将响应流中的数据写入文件
             try (FileOutputStream fos = new FileOutputStream(String.valueOf(localFilePath))) {
                 fos.write(Objects.requireNonNull(result.getBody()));
@@ -425,7 +450,7 @@ public class DatasetStoreController {
 
             // 将 JSON 写入文件
             mapper.writeValue(outputFile, json);
-            System.out.println("JSON 文件生成成功！");
+            System.out.println("JSON 文件生成成功！_java");
         } catch (IOException e) {
             e.printStackTrace();
         }

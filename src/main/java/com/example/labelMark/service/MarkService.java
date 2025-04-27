@@ -21,15 +21,20 @@ public interface MarkService extends IService<Mark> {
 
     void deleteMark(int taskId, int userId, int typeId);
 
-    void insertMark(Mark mark);
+    void insertOrUpdateMark(Mark mark);
 
     List<Mark> getMarkByTaskId(Integer taskId);
 
     void deleteMarkByTaskId(int taskId);
 
-//    Integer GetTaskIdNum(int taskId);
-
     List<Mark> selectMarkById(int taskId);
 
     long GetTaskIdNum(int taskId);
+
+    List<Mark> getTotal();
+
+    Mark selectByMarkId(Integer markId);
+    boolean deleteMarks(List<Mark> total);
+
+    void deleteMarkByTaskAndUser(int taskId, int userId);
 }

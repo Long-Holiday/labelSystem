@@ -16,7 +16,7 @@ import lombok.Setter;
 
 /**
  * <p>
- * 
+ *
  * </p>
  *
  * @author hjw
@@ -43,6 +43,9 @@ public class Server implements Serializable {
 
     @TableField("publisher")
     private String publisher;
+
+    @TableField("publish_url")
+    private String publishUrl;
 
     @ApiModelProperty("发布日期")
     @TableField("publish_time")

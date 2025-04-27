@@ -49,7 +49,6 @@ public class TaskController {
     private MarkService markService;
 
 
-    // 在这里插入时，task中的mapServer与server中的ser_name存在约束
     @PostMapping("/createTask")
     @ApiOperation("创建任务")
     public Result createTask(String dataRange, String taskName, String taskType, String mapServer) {
@@ -60,7 +59,6 @@ public class TaskController {
         return ResultGenerator.getSuccessResult("插入失败");
     }
 
-    // 在这里插入时，task中的mapServer与server中的ser_name存在约束
     @PostMapping("/publishTask")
     @ApiOperation("创建任务,包括保存关联的指定任务用户和类型")
     public Result publishTask(@RequestBody Map<String, Object> map) {
@@ -208,9 +206,30 @@ public class TaskController {
         Integer taskId = Integer.valueOf(map.get("taskid").toString());
 //        拼接起止日期
         String dateRangeStr = dateRange.get(0) + " " + dateRange.get(1);
+
         taskService.updateTaskById(taskId, taskName, dateRangeStr, taskType, mapServer);
-        return ResultGenerator.getSuccessResult("任务发布成功");
-    }
+
+        //        拆解用户和所属类型
+        String username, typeArr = "";
+        for (String usernameAndType : usernameAndTypeArr) {
+            String[] usernameAndTypeStr = usernameAndType.split(",");
+            username = usernameAndTypeStr[0];
+            for (int i = 1; i < usernameAndTypeStr.length; i++) {
+                if (i == usernameAndTypeStr.length - 1) {
+                    typeArr += usernameAndTypeStr[i];
+                } else {
+                    typeArr += usernameAndTypeStr[i] + ",";
+                }
+            }
+            boolean isUpdate = taskAcceptedService.createTaskAccept(taskId, username, typeArr);
+//            重置
+            typeArr = "";
+            if (isUpdate == false) {
+                return ResultGenerator.getSuccessResult("插入接收任务失败");
+            }
+        }
+        return ResultGenerator.getSuccessResult("任务更新成功");
+        }
 
     @DeleteMapping("/deleteTask/{taskId}")
     public Result deleteTask(@PathVariable int taskId) {

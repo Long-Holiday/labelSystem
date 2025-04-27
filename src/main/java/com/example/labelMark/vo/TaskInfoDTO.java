@@ -15,7 +15,6 @@ import java.util.Map;
 public class TaskInfoDTO {
     private int taskid;
     private String taskname;
-    private String markTable;
     private String type;
     private String mapserver;
     private String daterange;

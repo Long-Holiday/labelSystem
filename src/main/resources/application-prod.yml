@@ -18,10 +18,10 @@ spring:
     password: admin
     virtual-host: /
   datasource:
-    url: jdbc:mysql://localhost:3306/test
+    url: jdbc:mysql://localhost:3306/label
     username: root
     password: 123456
-    driver-class-name: com.mysql.cj.jdbc.Driver
+#    driver-class-name: com.mysql.cj.jdbc.Driver
   security:
     jwt:
       key: 'abcdefghijklmn'

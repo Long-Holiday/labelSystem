@@ -11,7 +11,7 @@ import java.util.Base64;
 @Service
 public class GeoServerRESTClient {
 
-    private static final String GEOSERVER_REST_URL = "http://localhost:8080/geoserver/rest";
+    private static final String GEOSERVER_REST_URL = "http://localhost:8081/geoserver/rest";
     private static final String WORKSPACE = "LUU";
     private static final String DATASTORE = "test";
     private static final String LAYER = "airport";
@@ -20,7 +20,7 @@ public class GeoServerRESTClient {
     private static final String LAYERNAME = "airport";
     public String getLayerInfo (String filename) {
         try {
-            String layersEndpoint = GEOSERVER_REST_URL + "/layers/" + WORKSPACE + ":" + LAYERNAME + ".json";
+            String layersEndpoint = GEOSERVER_REST_URL + "/layers/" + WORKSPACE + ":" + filename + ".json";
             String auth = USERNAME + ":" + PASSWORD;
             String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
 

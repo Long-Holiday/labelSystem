@@ -1,8 +1,10 @@
 package com.example.labelMark.utils;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.map.MapBuilder;
 import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.example.labelMark.domain.Mark;
 import com.example.labelMark.domain.Type;
@@ -30,13 +32,19 @@ public class CoordinateConverter {
             Integer typeId = (Integer) item.get("typeId");
 
             if (extentArr != null) {
-                for (Object feature : extentArr) {
+                for (Object featureAndMarkId : extentArr) {
                     StringBuilder itemArr = new StringBuilder();
-                    flattenCoordinates(feature, itemArr);
+//                    解析markId
+                    Map featureAndMarkIdMap = (Map<?, ?>) featureAndMarkId;
+                    Object markIdObj = featureAndMarkIdMap.get("markId");
+                    String markId =ObjectUtil.isNotNull(markIdObj)
+                            ?markIdObj.toString():null;
+                    flattenCoordinates(featureAndMarkIdMap.get("feature"), itemArr);
 
                     Map<String, Object> geometryMap = new HashMap<>();
                     geometryMap.put("geom", itemArr.toString());
                     geometryMap.put("typeId", typeId);
+                    geometryMap.put("markId", markId);
 
                     geometryArr.add(geometryMap);
                 }
@@ -106,6 +114,7 @@ public class CoordinateConverter {
 
             Map<String, Object> markGeoJson = MapUtil.builder(new HashMap<String, Object>())
                     .put("typeId", mark.getTypeId())
+                    .put("markId", mark.getId())
                     .put("markGeoJson", new HashMap<String, Object>() {{
                         put("type", "FeatureCollection");
                         put("features", maps);

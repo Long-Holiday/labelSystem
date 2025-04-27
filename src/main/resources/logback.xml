@@ -1,9 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration debug="false">
     <!--定义日志文件的存储地址 勿在 LogBack 的配置中使用相对路径-->
-    <property name="LOG_HOME" value="F:/PG-project/labelMark/src/main/resources/log"/>
+    <property name="LOG_HOME" value="D:\样本标注平台代码\样本标注平台代码\labelMark\logs"/>
     <!-- 定义日志格式  -->
     <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] [%thread] [%-30.30logger{30}] %msg%n"/>
+    <!-- 根据项目名称来命名日志文件名 <springProperty scope="context" name="LOG_NAME" source="spring.application.name" /> -->
+    <property name="LOG_BACK" value="back" />
+
+    <!-- INFO 日志输出-->
+    <appender name="INFO" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_HOME}/info.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${LOG_HOME}/${LOG_BACK}/${LOG_NAME}.%d{yyyy-MM-dd}.%i.log
+            </FileNamePattern>
+            <MaxHistory>10</MaxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ERROR日志输出-->
+    <appender name="ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_HOME}/error.log</file>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${LOG_HOME}/${LOG_BACK}/${LOG_NAME}-error.%d{yyyy-MM-dd}.%i.log
+            </FileNamePattern>
+            <MaxHistory>10</MaxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
     <!-- 控制台输出 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
@@ -30,10 +72,13 @@
     </appender>
 
     <!-- 日志输出级别 -->
-    <logger name="org.springframework" level="DEBUG"/>
-    <logger name="com.example.labelMark" level="DEBUG"/>
-    <root level="DEBUG">
-        <appender-ref ref="CONSOLE"/>
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="com.example.labelMark" level="INFO">
+        <appender-ref ref="INFO"/>
+        <appender-ref ref="ERROR"/>
         <appender-ref ref="FILE"/>
+    </logger>
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
     </root>
 </configuration>

@@ -26,12 +26,12 @@ public class newMPGenerator {
     // 配置数据库信息
     private static final String URL = "jdbc:postgresql://localhost:5432/postgres?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8";
     private static final String USERNAME = "postgres";
-    private static final String PASSWORD = "hjw123";
+    private static final String PASSWORD = "123456";
     private static final String driverClassName = "org.postgresql.Driver";
 
     public static void main(String[] args) {
         // 数据源配置
-        FastAutoGenerator.create("jdbc:postgresql://localhost:5432/postgres?sample_imgTimezone=GMT%2B8", "postgres", "hjw123")
+        FastAutoGenerator.create("jdbc:postgresql://localhost:5432/postgres?sample_imgTimezone=GMT%2B8", "postgres", "123456")
                 .globalConfig(builder -> {
                     builder.author("hjw")        // 设置作者
                             .enableSwagger()        // 开启 swagger 模式 默认值:false
