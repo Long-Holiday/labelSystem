@@ -23,8 +23,8 @@ public class LabelMarkApplication {
         SpringApplication.run(LabelMarkApplication.class, args);
     }
 
-    @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
+     @Bean
+     public RestTemplate restTemplate() {
+         return new RestTemplate();
+     }
 }

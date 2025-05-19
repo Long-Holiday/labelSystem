@@ -63,5 +63,15 @@ public class Task implements Serializable {
     @TableField("audit_feedback")
     private String auditFeedback;
 
+    @ApiModelProperty("0为团队任务；1为非团队任务")
+    @TableField("task_class")
+    private Integer taskClass;
 
+    @ApiModelProperty("创建者ID")
+    @TableField("user_id")
+    private Integer userId;
+
+    @ApiModelProperty("积分")
+    @TableField("score")
+    private Integer score;
 }

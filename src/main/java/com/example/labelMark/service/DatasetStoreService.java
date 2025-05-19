@@ -3,7 +3,6 @@ package com.example.labelMark.service;
 import com.example.labelMark.domain.DatasetStore;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.labelMark.domain.ImageInfo;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
@@ -16,7 +15,6 @@ import java.util.Map;
  * @author hjw
  * @since 2024-05-08
  */
-@Service
 public interface DatasetStoreService extends IService<DatasetStore> {
 
     Integer createDataset(int taskId);

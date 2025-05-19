@@ -9,6 +9,9 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Getter;
 import lombok.Setter;
+import com.alibaba.fastjson.JSONObject;
+import com.example.labelMark.config.JsonObjectTypeHandler;
+import org.apache.ibatis.type.JdbcType;
 
 import javax.validation.constraints.Pattern;
 
@@ -43,9 +46,9 @@ public class Mark implements Serializable {
     @TableField("type_id")
     private Integer typeId;
 
-    @ApiModelProperty("标注信息，是标注区域的坐标字符串")
-    @TableField("geom")
-    private String geom;
+    @ApiModelProperty("标注信息，是标注区域的GeoJSON格式")
+    @TableField(value = "geom", typeHandler = JsonObjectTypeHandler.class, jdbcType = JdbcType.OTHER)
+    private JSONObject geom;
 
     @ApiModelProperty("0 未通过，1 通过")
     @TableField("status")

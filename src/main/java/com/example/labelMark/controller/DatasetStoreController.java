@@ -182,8 +182,7 @@ public class DatasetStoreController {
 
 
     @GetMapping("/download")
-    public Result downloadDataset(@RequestParam(required = false,value = "taskid") Integer taskId, HttpServletResponse response){
-
+    public Result downloadDataset(@RequestParam(required = false,value = "taskid") Integer taskId, HttpServletResponse response) {
         Path outputDir = Paths.get(System.getProperty("user.dir")+ File.separator + "src/main/java/com/example/labelMark/resource/public/dataset/COCO_" + taskId);
 
         // 检查文件读取目录是否存在
@@ -233,7 +232,329 @@ public class DatasetStoreController {
             e.printStackTrace();
             return ResultGenerator.getFailResult(e.getMessage());
         }
+    }
 
+    @PostMapping("/downloadMultiple")
+    public Result downloadMultipleDatasets(@RequestBody Map<String,Object> map, HttpServletResponse response) {
+        List<Integer> taskIds = (List<Integer>) map.get("taskIds");
+        
+        if (taskIds == null || taskIds.isEmpty()) {
+            return ResultGenerator.getFailResult("请提供有效的任务ID数组");
+        }
+        
+        // 创建临时目录来合并数据集
+        Path tempDir = Paths.get(System.getProperty("user.dir"), "merged_coco");
+        Path tempImagesDir = Paths.get(tempDir.toString(), "images");
+        Path tempAnnotationsDir = Paths.get(tempDir.toString(), "annotations");
+        
+        // 确保目录存在，如果已存在则先删除
+        try {
+            if (Files.exists(tempDir)) {
+                deleteDirectoryRecursively(tempDir);
+            }
+            Files.createDirectories(tempDir);
+            Files.createDirectories(tempImagesDir);
+            Files.createDirectories(tempAnnotationsDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResultGenerator.getFailResult("创建临时目录失败: " + e.getMessage());
+        }
+        
+        // 收集所有数据集的信息
+        List<Map<String, Object>> mergedImages = new ArrayList<>();
+        List<Map<String, Object>> mergedAnnotations = new ArrayList<>();
+        List<Map<String, Object>> mergedCategories = new ArrayList<>();
+        final int[] counters = {0, 0, 1}; // imageIdOffset, annotationIdOffset, currentImageId
+        
+        // 用于跟踪文件名，避免重复
+        Map<String, Integer> fileNameMap = new HashMap<>();
+        
+        // 处理每个任务
+        for (Integer taskId : taskIds) {
+            Path sourcePath = Paths.get(System.getProperty("user.dir") + File.separator + "src/main/java/com/example/labelMark/resource/public/dataset/COCO_" + taskId);
+            
+            if (!Files.exists(sourcePath)) {
+                System.out.println("任务ID " + taskId + " 的数据集不存在，已跳过");
+                continue;
+            }
+            
+            // 读取annotations.json
+            try {
+                Path annotationsPath = Paths.get(sourcePath.toString(), "annotations", "annotations.json");
+                if (!Files.exists(annotationsPath)) {
+                    System.out.println("任务ID " + taskId + " 的annotations.json不存在，已跳过");
+                    continue;
+                }
+                
+                // 使用ObjectMapper解析JSON
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode data = mapper.readTree(new File(annotationsPath.toString()));
+                
+                // 处理图像
+                if (data.has("images")) {
+                    JsonNode imagesNode = data.get("images");
+                    if (!imagesNode.isArray()) {
+                        // 单个图像对象情况
+                        String fileName = imagesNode.get("file_name").asText();
+                        
+                        // 检查文件名是否已存在，如果存在则添加任务ID前缀
+                        String actualFileName = fileName;
+                        if (fileNameMap.containsKey(fileName)) {
+                            // 文件名冲突，添加任务ID前缀
+                            actualFileName = "task_" + taskId + "_" + fileName;
+                        }
+                        fileNameMap.put(actualFileName, counters[2]); // 记录文件名与ID的映射
+                        
+                        // 复制图像文件，保留原始文件名
+                        Path sourceImagePath = Paths.get(sourcePath.toString(), "images", fileName);
+                        Path targetImagePath = Paths.get(tempImagesDir.toString(), actualFileName);
+                        Files.copy(sourceImagePath, targetImagePath, StandardCopyOption.REPLACE_EXISTING);
+                        
+                        // 创建新图像对象并添加到合并集合
+                        Map<String, Object> newImage = new HashMap<>();
+                        newImage.put("file_name", actualFileName);
+                        newImage.put("id", counters[2]); // currentImageId
+                        newImage.put("width", imagesNode.get("width").asInt());
+                        newImage.put("height", imagesNode.get("height").asInt());
+                        mergedImages.add(newImage);
+                        counters[2]++; // currentImageId++
+                    } else {
+                        // 处理图像数组
+                        for (JsonNode image : imagesNode) {
+                            String fileName = image.get("file_name").asText();
+                            
+                            // 检查文件名是否已存在，如果存在则添加任务ID前缀
+                            String actualFileName = fileName;
+                            if (fileNameMap.containsKey(fileName)) {
+                                // 文件名冲突，添加任务ID前缀
+                                actualFileName = "task_" + taskId + "_" + fileName;
+                            }
+                            fileNameMap.put(actualFileName, counters[2]); // 记录文件名与ID的映射
+                            
+                            // 复制图像文件，保留原始文件名
+                            Path sourceImagePath = Paths.get(sourcePath.toString(), "images", fileName);
+                            Path targetImagePath = Paths.get(tempImagesDir.toString(), actualFileName);
+                            Files.copy(sourceImagePath, targetImagePath, StandardCopyOption.REPLACE_EXISTING);
+                            
+                            // 创建新图像对象并添加到合并集合
+                            Map<String, Object> newImage = new HashMap<>();
+                            newImage.put("file_name", actualFileName);
+                            newImage.put("id", counters[2]); // currentImageId
+                            newImage.put("width", image.get("width").asInt());
+                            newImage.put("height", image.get("height").asInt());
+                            mergedImages.add(newImage);
+                            counters[2]++; // currentImageId++
+                        }
+                    }
+                }
+                
+                // 处理注释
+                if (data.has("annotations")) {
+                    JsonNode annotationsNode = data.get("annotations");
+                    if (annotationsNode.isArray()) {
+                        for (JsonNode annotation : annotationsNode) {
+                            // 获取原始图像ID
+                            int originalImgId = annotation.get("img_id").asInt();
+                            final int imageIdOffset = counters[0];
+                            final int annotationIdOffset = counters[1];
+                            
+                            // 创建新注释对象
+                            Map<String, Object> newAnnotation = new HashMap<>();
+                            // 复制所有字段
+                            annotation.fields().forEachRemaining(entry -> {
+                                String key = entry.getKey();
+                                JsonNode value = entry.getValue();
+                                if ("id".equals(key)) {
+                                    newAnnotation.put(key, annotationIdOffset + value.asInt());
+                                } else if ("img_id".equals(key)) {
+                                    newAnnotation.put(key, imageIdOffset + value.asInt());
+                                } else {
+                                    if (value.isArray()) {
+                                        // 处理数组类型
+                                        List<Object> list = new ArrayList<>();
+                                        for (JsonNode item : value) {
+                                            if (item.isArray()) {
+                                                // 处理嵌套数组（如segmentation）
+                                                List<Object> innerList = new ArrayList<>();
+                                                for (JsonNode innerItem : item) {
+                                                    if (innerItem.isNumber()) {
+                                                        innerList.add(innerItem.asDouble());
+                                                    } else {
+                                                        innerList.add(innerItem.asText());
+                                                    }
+                                                }
+                                                list.add(innerList);
+                                            } else if (item.isNumber()) {
+                                                list.add(item.asDouble());
+                                            } else {
+                                                list.add(item.asText());
+                                            }
+                                        }
+                                        newAnnotation.put(key, list);
+                                    } else if (value.isObject()) {
+                                        // 处理对象类型
+                                        Map<String, Object> obj = new HashMap<>();
+                                        value.fields().forEachRemaining(e -> {
+                                            if (e.getValue().isNumber()) {
+                                                obj.put(e.getKey(), e.getValue().asDouble());
+                                            } else {
+                                                obj.put(e.getKey(), e.getValue().asText());
+                                            }
+                                        });
+                                        newAnnotation.put(key, obj);
+                                    } else if (value.isNumber()) {
+                                        newAnnotation.put(key, value.asDouble());
+                                    } else {
+                                        newAnnotation.put(key, value.asText());
+                                    }
+                                }
+                            });
+                            
+                            mergedAnnotations.add(newAnnotation);
+                        }
+                    }
+                }
+                
+                // 合并类别
+                if (data.has("categories")) {
+                    JsonNode categoriesNode = data.get("categories");
+                    if (categoriesNode.isArray()) {
+                        for (JsonNode category : categoriesNode) {
+                            int categoryId = category.get("id").asInt();
+                            boolean exists = mergedCategories.stream()
+                                .anyMatch(c -> ((Number)c.get("id")).intValue() == categoryId);
+                            
+                            if (!exists) {
+                                Map<String, Object> newCategory = new HashMap<>();
+                                category.fields().forEachRemaining(entry -> {
+                                    if (entry.getValue().isNumber()) {
+                                        newCategory.put(entry.getKey(), entry.getValue().asDouble());
+                                    } else {
+                                        newCategory.put(entry.getKey(), entry.getValue().asText());
+                                    }
+                                });
+                                mergedCategories.add(newCategory);
+                            }
+                        }
+                    } else {
+                        // 单个类别对象
+                        int categoryId = categoriesNode.get("id").asInt();
+                        boolean exists = mergedCategories.stream()
+                            .anyMatch(c -> ((Number)c.get("id")).intValue() == categoryId);
+                        
+                        if (!exists) {
+                            Map<String, Object> newCategory = new HashMap<>();
+                            categoriesNode.fields().forEachRemaining(entry -> {
+                                if (entry.getValue().isNumber()) {
+                                    newCategory.put(entry.getKey(), entry.getValue().asDouble());
+                                } else {
+                                    newCategory.put(entry.getKey(), entry.getValue().asText());
+                                }
+                            });
+                            mergedCategories.add(newCategory);
+                        }
+                    }
+                }
+                
+                // 更新偏移量
+                counters[0] = counters[2] - 1; // imageIdOffset = currentImageId - 1
+                if (data.has("annotations")) {
+                    JsonNode annotationsNode = data.get("annotations");
+                    counters[1] += annotationsNode.isArray() ? annotationsNode.size() : 1; // annotationIdOffset += size
+                }
+                
+                // 复制images目录下的所有文件（不仅仅是在annotations.json中引用的文件）
+                Path sourceImagesDir = Paths.get(sourcePath.toString(), "images");
+                if (Files.exists(sourceImagesDir)) {
+                    try {
+                        Files.list(sourceImagesDir).forEach(imagePath -> {
+                            if (!Files.isDirectory(imagePath)) {
+                                String fileName = imagePath.getFileName().toString();
+                                // 检查文件名是否已存在，如果存在则添加任务ID前缀
+                                String actualFileName = fileName;
+                                if (fileNameMap.containsKey(fileName) && !fileNameMap.containsKey(actualFileName)) {
+                                    // 文件名冲突，添加任务ID前缀
+                                    actualFileName = "task_" + taskId + "_" + fileName;
+                                }
+                                
+                                // 如果文件尚未被复制（不在fileNameMap中），则复制它
+                                if (!fileNameMap.containsKey(actualFileName)) {
+                                    Path targetImagePath = Paths.get(tempImagesDir.toString(), actualFileName);
+                                    try {
+                                        Files.copy(imagePath, targetImagePath, StandardCopyOption.REPLACE_EXISTING);
+                                        // 注意：这里不更新counters[2]，因为这些额外的图像不会被添加到annotations.json中
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        });
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("处理任务ID " + taskId + " 时出错: " + e.getMessage());
+            }
+        }
+        
+        // 写入合并后的annotations.json
+        Map<String, Object> mergedData = new HashMap<>();
+        mergedData.put("images", mergedImages);
+        mergedData.put("annotations", mergedAnnotations);
+        mergedData.put("categories", mergedCategories);
+        
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.enable(SerializationFeature.INDENT_OUTPUT);
+            mapper.writeValue(new File(tempAnnotationsDir.toString() + "/annotations.json"), mergedData);
+            
+            // 创建压缩文件
+            Path zipPath = Paths.get(System.getProperty("user.dir"), "merged_coco.zip");
+            if (Files.exists(zipPath)) {
+                Files.delete(zipPath);
+            }
+            Files.createFile(zipPath);
+            
+            // 创建ZIP文件
+            try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipPath.toFile()))) {
+                Files.walk(tempDir).filter(path -> !Files.isDirectory(path)).forEach(path -> {
+                    ZipEntry zipEntry = new ZipEntry("merged_coco/" + tempDir.relativize(path).toString());
+                    try {
+                        zos.putNextEntry(zipEntry);
+                        Files.copy(path, zos);
+                        zos.closeEntry();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+            }
+            
+            // 读取压缩文件到字节数组
+            byte[] zipContent = Files.readAllBytes(zipPath);
+            
+            // 删除临时文件和目录
+            Files.delete(zipPath);
+            deleteDirectoryRecursively(tempDir);
+            
+            // 设置响应头
+            response.addHeader("Content-Disposition", "attachment; filename=merged_coco.zip");
+            response.addHeader("Content-Type", "application/zip");
+            
+            // 返回压缩文件的字节数组
+            return ResultGenerator.getSuccessResult(zipContent);
+            
+        } catch (IOException e) {
+            e.printStackTrace();
+            try {
+                deleteDirectoryRecursively(tempDir);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            return ResultGenerator.getFailResult(e.getMessage());
+        }
     }
 
     @PostMapping("/generateDataset")
@@ -382,7 +703,7 @@ public class DatasetStoreController {
 //            GenerateStuffImg.generateStuffImg((int) Math.round(width), (int) Math.round(height), segmentationArr, filePath.toString());
 //
 //        }
-        Path StuffImgPath = Paths.get(String.valueOf(outputDirImage), "train_"+taskId+".PNG");
+        Path StuffImgPath = Paths.get(String.valueOf(outputDirImage), "train_"+taskId+".jpeg");
         GenerateStuffImg.generateStuffImg((int) Math.round(width), (int) Math.round(height), segmentationArr, StuffImgPath.toString());
 
         int i;

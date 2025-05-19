@@ -1,5 +1,6 @@
 package com.example.labelMark.utils;
 
+import com.alibaba.fastjson.JSONObject;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -18,7 +19,13 @@ public class DomainToMapList {
         for (Field field : fields) {
             field.setAccessible(true); // 设置访问权限，允许反射访问私有变量
             try {
-                map.put(field.getName(), field.get(domain));
+                Object value = field.get(domain);
+                // 如果值是JSONObject，转换为String
+                if (value instanceof JSONObject) {
+                    map.put(field.getName(), ((JSONObject) value).toJSONString());
+                } else {
+                    map.put(field.getName(), value);
+                }
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }

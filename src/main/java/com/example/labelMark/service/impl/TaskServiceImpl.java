@@ -29,7 +29,7 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
 
     @Override
     public int createTask(String dataRange, String taskName, String taskType
-            , String mapServer) {
+            , String mapServer, Integer userId, Integer taskClass) {
         Task task = new Task();
 //        初试状态为未提交
         task.setStatus(3);
@@ -37,6 +37,8 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
         task.setTaskName(taskName);
         task.setTaskType(taskType);
         task.setMapServer(mapServer);
+        task.setUserId(userId);
+        task.setTaskClass(taskClass);
         boolean isSaved = save(task);
 //        taskMapper.insert(task);
         return isSaved == true ? task.getTaskId() : -1;
@@ -44,43 +46,25 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
 
     @Override
     public List<TaskInfoDTO> getTaskInfo(String username) {
-        List<Map<String, Object>> list = taskMapper.getTaskInfo(username);
-        List<TaskInfoDTO> taskInfoDTOList = new ArrayList<>();
-        for (Map<String, Object> map : list) {
+        List<Map<String, Object>> mapList = taskMapper.getTaskInfo(username);
+        ArrayList<TaskInfoDTO> list = new ArrayList<>();
+        for (Map map : mapList) {
             TaskInfoDTO taskInfoDTO = new TaskInfoDTO();
-            if (ObjectUtil.isNotNull(map.get("task_id"))) {
-                taskInfoDTO.setTaskid((Integer) map.get("task_id"));
-            }
-            if (ObjectUtil.isNotNull(map.get("task_name"))) {
-                taskInfoDTO.setTaskname((String) map.get("task_name"));
-            }
-            if (ObjectUtil.isNotNull(map.get("id"))) {
-                taskInfoDTO.setId((Integer) map.get("id"));
-            }
-            if (ObjectUtil.isNotNull(map.get("task_type"))) {
-                taskInfoDTO.setType((String) map.get("task_type"));
-            }
-            if (ObjectUtil.isNotNull(map.get("map_server"))) {
-                taskInfoDTO.setMapserver((String) map.get("map_server"));
-            }
-            if (ObjectUtil.isNotNull(map.get("date_range"))) {
-                taskInfoDTO.setDaterange((String) map.get("date_range"));
-            }
-            if (ObjectUtil.isNotNull(map.get("status"))) {
-                taskInfoDTO.setStatus((Integer) map.get("status"));
-            }
-            if (ObjectUtil.isNotNull(map.get("userid"))) {
-                taskInfoDTO.setUserid((Integer) map.get("userid"));
-            }
-            if (ObjectUtil.isNotNull(map.get("username"))) {
-                taskInfoDTO.setUsername((String) map.get("username"));
-            }
-            if (ObjectUtil.isNotNull(map.get("type_arr"))) {
-                taskInfoDTO.setTypeArr((String) map.get("type_arr"));
-            }
-            taskInfoDTOList.add(taskInfoDTO);
+            taskInfoDTO.setTaskid(Integer.valueOf(ObjectUtil.toString(map.get("task_id"))));
+            taskInfoDTO.setTaskname(ObjectUtil.toString(map.get("task_name")));
+            taskInfoDTO.setType(ObjectUtil.toString(map.get("task_type")));
+            taskInfoDTO.setMapserver(ObjectUtil.toString(map.get("map_server")));
+            taskInfoDTO.setDaterange(ObjectUtil.toString(map.get("date_range")));
+            taskInfoDTO.setStatus(Integer.valueOf(ObjectUtil.toString(map.get("status"))));
+            taskInfoDTO.setAuditfeedback(ObjectUtil.toString(map.get("audit_feedback")));
+            taskInfoDTO.setUserid(Integer.valueOf(ObjectUtil.toString(map.get("userid"))));
+            taskInfoDTO.setUsername(ObjectUtil.toString(map.get("username")));
+            taskInfoDTO.setId(Integer.valueOf(ObjectUtil.toString(map.get("id"))));
+            taskInfoDTO.setTypeArr(ObjectUtil.toString(map.get("type_arr")));
+            taskInfoDTO.setTaskClass(map.get("task_class") != null ? Integer.valueOf(ObjectUtil.toString(map.get("task_class"))) : 0);
+            list.add(taskInfoDTO);
         }
-        return taskInfoDTOList;
+        return list;
     }
 
     @Override
@@ -170,5 +154,39 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
         return ObjectUtil.isNotNull(task) && task.getMarkId() != null ? task.getMarkId() : null;
     }
 
+    /**
+     * 获取管理员创建的任务
+     *
+     * @param creatorUserId 创建者ID
+     * @return 任务列表
+     */
+    @Override
+    public List<TaskInfoDTO> getTasksByCreatorId(Integer creatorUserId) {
+        List<Map<String, Object>> mapList = taskMapper.getTasksByCreatorId(creatorUserId);
+        ArrayList<TaskInfoDTO> list = new ArrayList<>();
+        for (Map map : mapList) {
+            TaskInfoDTO taskInfoDTO = new TaskInfoDTO();
+            taskInfoDTO.setTaskid(Integer.valueOf(ObjectUtil.toString(map.get("task_id"))));
+            taskInfoDTO.setTaskname(ObjectUtil.toString(map.get("task_name")));
+            taskInfoDTO.setType(ObjectUtil.toString(map.get("task_type")));
+            taskInfoDTO.setMapserver(ObjectUtil.toString(map.get("map_server")));
+            taskInfoDTO.setDaterange(ObjectUtil.toString(map.get("date_range")));
+            taskInfoDTO.setStatus(Integer.valueOf(ObjectUtil.toString(map.get("status"))));
+            taskInfoDTO.setAuditfeedback(ObjectUtil.toString(map.get("audit_feedback")));
+            taskInfoDTO.setTaskClass(map.get("task_class") != null ? Integer.valueOf(ObjectUtil.toString(map.get("task_class"))) : 0);
+            list.add(taskInfoDTO);
+        }
+        return list;
+    }
 
+    /**
+     * 更新任务的submitter_id为指定用户ID
+     *
+     * @param taskId 任务ID
+     * @param userId 用户ID
+     */
+    @Override
+    public void updateTaskSubmitter(Integer taskId, Integer userId) {
+        taskMapper.updateTaskSubmitter(taskId, userId);
+    }
 }

@@ -1,5 +1,6 @@
 package com.example.labelMark.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.labelMark.domain.Model;
 import com.example.labelMark.mapper.ModelMapper;
@@ -37,5 +38,33 @@ public class ModelServiceImpl extends ServiceImpl<ModelMapper, Model> implements
     @Override
     public List<Model> getModelListByUserId(Integer userId, String taskType) {
         return modelMapper.selectByUserId(userId, taskType);
+    }
+
+    @Override
+    public List<Model> getModelListByUserIdWithoutTaskType(Integer userId) {
+        // 使用QueryWrapper查询所有属于该用户的模型，不过滤任务类型
+        QueryWrapper<Model> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id", userId);
+        return list(queryWrapper);
+    }
+
+
+    @Override
+    public boolean saveModel(Model model) {
+        // 设置默认值
+        if (model.getStatus() == null) {
+            model.setStatus(1);
+        }
+        return save(model);
+    }
+
+    @Override
+    public boolean updateModel(Model model) {
+        return updateById(model);
+    }
+
+    @Override
+    public boolean deleteModel(Integer modelId) {
+        return removeById(modelId);
     }
 }

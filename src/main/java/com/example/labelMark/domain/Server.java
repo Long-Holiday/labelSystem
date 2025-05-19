@@ -51,6 +51,9 @@ public class Server implements Serializable {
     @TableField("publish_time")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private String publishTime;
-
+    
+    @ApiModelProperty("用户ID")
+    @TableField("user_id")
+    private Integer userId;
 
 }

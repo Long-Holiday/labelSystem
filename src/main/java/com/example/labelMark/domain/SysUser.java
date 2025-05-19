@@ -48,6 +48,12 @@ public class SysUser implements Serializable {
     @ApiModelProperty("未完成任务数")
     @TableField("unfinished_num")
     private Integer unfinishednum;
+    
+    @ApiModelProperty("团队ID")
+    @TableField("team_id")
+    private Integer teamId;
 
-
+    @ApiModelProperty("积分")
+    @TableField("score")
+    private Integer score;
 }

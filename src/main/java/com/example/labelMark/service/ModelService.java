@@ -30,6 +30,34 @@ public interface ModelService extends IService<Model> {
      * @param userId 用户ID
      * @return List<Model>
      */
-    List<Model> getModelListByUserId(Integer userId,String taskType);
+    List<Model> getModelListByUserId(Integer userId, String taskType);
 
+    /**
+     * 根据用户ID获取所有模型列表（不过滤任务类型）
+     * @param userId 用户ID
+     * @return List<Model>
+     */
+    List<Model> getModelListByUserIdWithoutTaskType(Integer userId);
+
+
+    /**
+     * 保存模型
+     * @param model 模型对象
+     * @return 是否保存成功
+     */
+    boolean saveModel(Model model);
+
+    /**
+     * 更新模型
+     * @param model 模型对象
+     * @return 是否更新成功
+     */
+    boolean updateModel(Model model);
+
+    /**
+     * 删除模型
+     * @param modelId 模型ID
+     * @return 是否删除成功
+     */
+    boolean deleteModel(Integer modelId);
 }

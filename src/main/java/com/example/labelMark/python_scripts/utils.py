@@ -66,7 +66,7 @@ def fetch_labels_from_db(conn, task_id, table_name="mark"):
         return []
     try:
         cursor = conn.cursor()
-        query = f"SELECT id, geom, type_id, user_id, task_id, status FROM {table_name} WHERE task_id = %s"
+        query = f"SELECT id, geom::json, type_id, user_id, task_id, status FROM {table_name} WHERE task_id = %s"
         cursor.execute(query, (task_id,))
         labels_data = cursor.fetchall()
         cursor.close()
@@ -129,9 +129,14 @@ def insert_segmentation_results_db(conn, task_id, segmentation_polygons, user_id
     values_list = []
     for type_id, polygons in segmentation_polygons.items():
         for polygon in polygons:
-            geom_str = ', '.join([f"{x}, {y}" for x, y in polygon.exterior.coords])
+            # Create GeoJSON format
+            coords = [[x, y] for x, y in polygon.exterior.coords]
+            geojson = {
+                "type": "Polygon",
+                "coordinates": [coords]
+            }
             values_list.append((cursor.mogrify("(%s, %s, %s, %s, %s)", 
-                                              (geom_str, int(type_id), user_id, task_id, status)).decode('utf-8')))
+                                            (json.dumps(geojson), int(type_id), user_id, task_id, status)).decode('utf-8')))
     if values_list:
         values_str = ','.join(values_list)
         full_insert_query = insert_query % values_str
@@ -1557,24 +1562,21 @@ def post_process_mask_sam(mask, min_object_size=10, hole_size_threshold=20, boun
 def generate_point_coordinates_sam(labels_data, type_id):
     """Generate point coordinates for polygons of a specific type_id, transforming to EPSG:4326."""
     point_coords = []
-    for _, geom_str, tid, *_ in labels_data:
+    for _, geom_json, tid, *_ in labels_data:
         if tid != type_id:
             continue
         try:
-            coords_str_list = geom_str.split(',')
-            if len(coords_str_list) == 2:
-                x = float(coords_str_list[0].strip())
-                y = float(coords_str_list[1].strip())
-                lon, lat = TRANSFORMER_3857_TO_4326.transform(x, y)
-                point_coords.append([lon, lat])
-            # for i in range(0, len(coords_str_list), 2):
-            #     x = float(coords_str_list[i].strip())
-            #     y = float(coords_str_list[i+1].strip())
-            #     # Transform each point from EPSG:3857 to EPSG:4326
-            #     lon, lat = TRANSFORMER_3857_TO_4326.transform(x, y)
-            #     point_coords.append([lon, lat])  # Format: [longitude, latitude]
-        except (ValueError, IndexError) as e:
-            print(f"Error processing geometry string: {e}, geom_str: {geom_str}")
+            # Parse GeoJSON
+            geom = json.loads(geom_json)
+            if geom['type'] == 'Polygon':
+                coords = geom['coordinates'][0]  # Get the first ring (exterior)
+                for coord in coords:
+                    x, y = coord
+                    # Transform from EPSG:3857 to EPSG:4326
+                    lon, lat = TRANSFORMER_3857_TO_4326.transform(x, y)
+                    point_coords.append([lon, lat])
+        except (ValueError, IndexError, KeyError) as e:
+            print(f"Error processing geometry: {e}, geom_json: {geom_json}")
             continue
     return point_coords  # Return list of [lon, lat] pairs in EPSG:4326
 

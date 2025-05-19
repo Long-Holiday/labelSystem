@@ -10,8 +10,12 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.HashMap;
 import java.util.Map;
 
-
-@Service
+/**
+ * @author xiaomai
+ * @version 1.0
+ * @description： 遥感影像切片服务类
+ * @createDate 2024/4/17
+ */
 public interface GeoServerService {
     String getGeoserverInfo(String mapServer);
 

@@ -17,7 +17,7 @@ public interface MarkService extends IService<Mark> {
 
     boolean isMark(int taskId, int userId);
 
-    void createMark(int taskId, int userId, int typeId, String geom);
+    void createMark(int taskId, int userId, int typeId, com.alibaba.fastjson.JSONObject geom);
 
     void deleteMark(int taskId, int userId, int typeId);
 

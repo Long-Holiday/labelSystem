@@ -25,4 +25,5 @@ public class TaskInfoDTO {
     private int id;
     private String typeArr;
     private List<Map<String, Object>> userArr;
+    private Integer taskClass; // 0为团队任务；1为非团队任务
 }

@@ -2,7 +2,6 @@ package com.example.labelMark.service;
 
 import com.example.labelMark.domain.Server;
 import com.baomidou.mybatisplus.extension.service.IService;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -12,12 +11,11 @@ import java.util.List;
  * </p>
  *
  * @author hjw
- * @since 2024-04-15
+ * @since 2024-05-16
  */
-@Service
 public interface ServerService extends IService<Server> {
 
-    List<Server> getServers();
+    List<Server> getServers(Integer userId);
 
     int deleteServerByName(String serName);
 

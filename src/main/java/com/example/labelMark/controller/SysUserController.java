@@ -3,18 +3,23 @@ package com.example.labelMark.controller;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.labelMark.domain.Role;
 import com.example.labelMark.domain.SysUser;
+import com.example.labelMark.domain.TeamTable;
 import com.example.labelMark.service.LoginService;
 import com.example.labelMark.service.RoleService;
 import com.example.labelMark.service.SysUserService;
+import com.example.labelMark.service.TeamService;
 import com.example.labelMark.utils.ResultGenerator;
 import com.example.labelMark.vo.LoginUser;
 import com.example.labelMark.vo.constant.Result;
 import com.example.labelMark.vo.constant.StatusEnum;
 import io.swagger.annotations.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -47,6 +52,8 @@ public class SysUserController {
     RoleService roleService;
     @Autowired
     LoginService loginService;
+    @Autowired
+    TeamService teamService;
 
     /**
      * TODO 注册需要增加校验，目前同用户名仍可以注册
@@ -58,6 +65,7 @@ public class SysUserController {
     public Result register(@RequestBody Map<String, Object> map) {
         String username = ObjectUtil.toString(map.get("userName"));
         String password = ObjectUtil.toString(map.get("userPassword"));
+        Integer isAdmin = map.get("isAdmin") != null ? Integer.valueOf(ObjectUtil.toString(map.get("isAdmin"))) : 0;
         SysUser user = SysUserService.findByUsername(username);
         System.out.println(username);
         if (ObjectUtil.isNotNull(user)) {
@@ -65,8 +73,8 @@ public class SysUserController {
         }
         SysUser SysUser = new SysUser();
         SysUser.setUsername(username);
-//        不为空，默认不是
-        SysUser.setIsadmin(1);
+        // 设置用户是否为管理员，默认为普通用户(0)
+        SysUser.setIsadmin(isAdmin);
         SysUser.setUserpassword(new BCryptPasswordEncoder().encode(password));
         int isCreated = SysUserService.createUser(SysUser);
         if (isCreated > 0) {
@@ -116,20 +124,44 @@ public class SysUserController {
             , @RequestParam(required = false) Integer pageSize
             , @RequestParam(required = false) String username) {
         try {
-            //            无参时默认值
+            // 无参时默认值
             if (ObjectUtil.isEmpty(current)) {
                 current = 1;
             }
             if (ObjectUtil.isEmpty(pageSize)) {
                 pageSize = 5;
             }
-            long total;
-            if (isAdmin != null) {
-                total = SysUserService.getUsersCountByAdmin(isAdmin);
-            } else {
-                total = SysUserService.getTotalCount();
+            
+            // 获取当前登录用户信息
+            LoginUser loginUser = (LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            SysUser currentUser = loginUser.getSysUser();
+            
+            // 检查是否是团队管理员（is_admin=1 且有team_id）
+            boolean isTeamAdmin = false;
+            Integer teamId = null;
+            
+            if (currentUser.getIsadmin() == 1 && currentUser.getTeamId() != null) {
+                isTeamAdmin = true;
+                teamId = currentUser.getTeamId();
             }
-            Page<SysUser> usersPage = SysUserService.getUsersPage(current, pageSize, userid, username, isAdmin);
+
+            long total;
+            Page<SysUser> usersPage;
+            
+            if (isTeamAdmin && isAdmin != null && isAdmin == 0) {
+                // 团队管理员查看普通用户，只显示团队内的普通用户
+                total = SysUserService.getUsersCountByAdminAndTeamId(isAdmin, teamId);
+                usersPage = SysUserService.getUsersPageByTeamId(current, pageSize, userid, username, isAdmin, teamId);
+            } else {
+                // 非团队管理员查看用户列表，或团队管理员查看管理员列表
+                if (isAdmin != null) {
+                    total = SysUserService.getUsersCountByAdmin(isAdmin);
+                } else {
+                    total = SysUserService.getTotalCount();
+                }
+                usersPage = SysUserService.getUsersPage(current, pageSize, userid, username, isAdmin);
+            }
+            
             Map<String, Object> map = new HashMap<>();
             map.put("code", StatusEnum.SUCCESS);
             map.put("data", usersPage.getRecords());
@@ -209,5 +241,20 @@ public class SysUserController {
     public Result logout() {
         Result result = loginService.logout();
         return result;
+    }
+
+    /**
+     * 根据用户名获取用户信息
+     */
+    @GetMapping("/getByUsername")
+    public ResponseEntity<?> getUserByUsername(@RequestParam String username) {
+        QueryWrapper<SysUser> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("username", username);
+        SysUser user = SysUserService.getOne(queryWrapper);
+        if (user != null) {
+            return ResponseEntity.ok(user);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
     }
 }

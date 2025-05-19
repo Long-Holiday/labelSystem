@@ -30,11 +30,21 @@ public interface SysFileMapper extends BaseMapper<SysFile> {
             "</script>"
     })
     List<SysFile> getAllFiles(Integer current, Integer pageSize, Integer fileId, int offset);
+    
+    @Select({
+            "<script>",
+            "SELECT * FROM file",
+            "WHERE user_id = #{userId}",
+            "ORDER BY file_id DESC",
+            "LIMIT #{pageSize} OFFSET #{offset}",
+            "</script>"
+    })
+    List<SysFile> getFilesByUserId(Integer current, Integer pageSize, Integer fileId, int offset, Integer userId);
 
     @Update("update SysFile set file_name=#{fileName}, update_time=#{updateTime} where file_id=#{fileId}")
     void updateFile(Integer fileId, String fileName, String updateTime);
 
 
-    @Insert("INSERT INTO file(file_name, update_time, status, size) values (#{fileName}, #{updateTime}, 0, #{size})")
-    void createFile(String fileName, String updateTime, String size);
+    @Insert("INSERT INTO file(file_name, update_time, status, size, user_id) values (#{fileName}, #{updateTime}, 0, #{size}, #{userId})")
+    void createFile(String fileName, String updateTime, String size, Integer userId);
 }

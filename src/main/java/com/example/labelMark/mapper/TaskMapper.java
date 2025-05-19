@@ -26,15 +26,15 @@ public interface TaskMapper extends BaseMapper<Task> {
     /*@MapKey("task_id")
     List<Map<String, Object>> getTaskInfo();*/
 
-    @Select({"<script>",
-            "select task_accepted.id,task_accepted.type_arr,sys_user.username as username",
-            "sys_user.user_id as userid,task.* from task join task_accepted on task.taskid=task_accepted.taskid",
-            "join sys_user on  task_accepted.username=sys_user.username ",
-            "<when test='username!=null'>",
-            "where sys_user.username=#{username}",
-            "</when>",
-            "order by status,taskid DESC ",
-            "</script>"})
+//     @Select({"<script>",
+//             "select task_accepted.id,task_accepted.type_arr,sys_user.username as username,",
+//             "sys_user.user_id as userid,task.* from task join task_accepted on task.task_id=task_accepted.task_id",
+//             "join sys_user on  task_accepted.username=sys_user.username ",
+//             "<when test='username!=null'>",
+//             "where sys_user.username=#{username}",
+//             "</when>",
+//             "order by status,task_id DESC ",
+//             "</script>"})
     List<Map<String, Object>> getTaskInfo(String username);
 
     @Select("select task_id = #{taskId} from task")
@@ -78,4 +78,22 @@ public interface TaskMapper extends BaseMapper<Task> {
 
     @Select("select task_type FROM task where task_id=#{taskId}")
     String getTypeById(int taskId);
+    
+    /**
+     * 获取由指定管理员创建的任务
+     *
+     * @param creatorUserId 创建者ID
+     * @return 任务列表
+     */
+    @Select("SELECT * FROM task WHERE user_id = #{creatorUserId} ORDER BY task_id DESC")
+    List<Map<String, Object>> getTasksByCreatorId(Integer creatorUserId);
+    
+    /**
+     * 更新任务的submitter_id为指定用户ID
+     *
+     * @param taskId 任务ID
+     * @param userId 用户ID
+     */
+    @Update("UPDATE task SET submitter_id = #{userId} WHERE task_id = #{taskId}")
+    void updateTaskSubmitter(Integer taskId, Integer userId);
 }

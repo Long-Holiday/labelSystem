@@ -39,6 +39,21 @@ public class Model implements Serializable {
     @TableField("task_type")
     private String taskType;
 
+    @TableField("path")
+    private String path;
+
+    @TableField("input_num")
+    private Integer inputNum;
+
+    @TableField("output_num")
+    private Integer outputNum;
+
+    @TableField("status")
+    private Integer status;
+
+    @TableField("model_type")
+    private String modelType;
+
     // 可以根据实际表结构添加其他字段
 
 }

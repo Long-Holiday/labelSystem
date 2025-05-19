@@ -1,6 +1,7 @@
 package com.example.labelMark.controller;
 
 import com.example.labelMark.service.SysFileService;
+import com.example.labelMark.vo.LoginUser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,6 +12,8 @@ import com.example.labelMark.service.ServerService;
 import com.example.labelMark.utils.GeoServerRESTClient;
 import com.example.labelMark.utils.ResultGenerator;
 import com.example.labelMark.vo.constant.Result;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
@@ -60,7 +63,16 @@ public class ServerController {
 
     @GetMapping("/getServers")
     public Result getServers() {
-        List<Server> servers = serverService.getServers();
+        // 获取当前登录用户
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        // 从Authentication中获取LoginUser对象
+        LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+        // 获取用户ID
+        Integer userId = loginUser.getSysUser().getUserid();
+        
+        // 用当前用户ID查询服务列表
+        List<Server> servers = serverService.getServers(userId);
         return ResultGenerator.getSuccessResult(servers);
     }
 
@@ -88,6 +100,14 @@ public class ServerController {
             String sername = map.get("sername").toString();
             String seryear = map.get("seryear").toString();
             String publishUrl = map.get("publishUrl").toString();
+            
+            // 获取当前登录用户
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            // 从Authentication中获取LoginUser对象
+            LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+            // 获取用户ID
+            Integer userId = loginUser.getSysUser().getUserid();
+            
             //创建服务
             Server server = new Server();
             server.setPublishUrl(publishUrl);
@@ -96,6 +116,8 @@ public class ServerController {
             server.setSerDesc(serdesc);
             server.setSerYear(seryear);
             server.setSerName(sername);
+            server.setUserId(userId); // 设置用户ID
+            
             boolean isInserted = serverService.createServer(server);
             if (isInserted) {
 //                TODO 使用fileId来唯一限定

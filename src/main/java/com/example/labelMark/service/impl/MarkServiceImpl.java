@@ -37,8 +37,14 @@ public class MarkServiceImpl extends ServiceImpl<MarkMapper, Mark> implements Ma
     }
 
     @Override
-    public void createMark(int taskId, int userId, int typeId, String geom) {
-        markMapper.createMark(taskId, userId, typeId, geom);
+    public void createMark(int taskId, int userId, int typeId, com.alibaba.fastjson.JSONObject geom) {
+        Mark mark = new Mark();
+        mark.setTaskId(taskId);
+        mark.setUserId(userId);
+        mark.setTypeId(typeId);
+        mark.setGeom(geom);
+        mark.setStatus(0);
+        save(mark);
     }
 
     @Override

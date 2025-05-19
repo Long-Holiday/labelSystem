@@ -4,10 +4,13 @@ import cn.hutool.core.util.ObjectUtil;
 import com.example.labelMark.domain.SysFile;
 import com.example.labelMark.service.SysFileService;
 import com.example.labelMark.utils.ResultGenerator;
+import com.example.labelMark.vo.LoginUser;
 import com.example.labelMark.vo.constant.Result;
 import com.example.labelMark.vo.constant.StatusEnum;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.io.FileUtils;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -87,6 +90,11 @@ public class SysFileController {
         String chunkDir = Paths.get(TEMP_DIR, fileNameArr[0]).toString();
         String destFilePath = Paths.get(UPLOAD_DIR, fileName).toString(); // Include file name and extension
 
+        // 获取当前登录用户ID
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+        Integer userId = loginUser.getSysUser().getUserid();
+
         // Ensure the upload directory exists
         Files.createDirectories(Paths.get(UPLOAD_DIR));
 
@@ -118,8 +126,8 @@ public class SysFileController {
                     .map(Path::toFile)
                     .forEach(File::delete);
 
-            // 在数据库中创建文件记录
-            sysfileService.createFile(fileName, updatetime, size);
+            // 在数据库中创建文件记录，包含用户ID
+            sysfileService.createFile(fileName, updatetime, size, userId);
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -171,7 +179,13 @@ public class SysFileController {
             if (ObjectUtil.isEmpty(pageSize)) {
                 pageSize = 5;
             }
-            List<SysFile> sysfiles = sysfileService.getAllFiles(current, pageSize, fileId);
+            
+            // 获取当前登录用户ID
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+            Integer userId = loginUser.getSysUser().getUserid();
+            
+            List<SysFile> sysfiles = sysfileService.getAllFiles(current, pageSize, fileId, userId);
             Map<String, Object> map = new HashMap<>();
             map.put("code", StatusEnum.SUCCESS);
             map.put("data", sysfiles);

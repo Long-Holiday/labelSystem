@@ -3,7 +3,9 @@ package com.example.labelMark.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.example.labelMark.domain.SysFile;
+import com.example.labelMark.domain.SysUser;
 import com.example.labelMark.mapper.SysFileMapper;
+import com.example.labelMark.mapper.SysUserMapper;
 import com.example.labelMark.service.SysFileService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
@@ -24,12 +26,24 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
 
     @Resource
     private SysFileMapper sysfileMapper;
+    
+    @Resource
+    private SysUserMapper sysUserMapper;
 
     @Override
-    public List<SysFile> getAllFiles(Integer current, Integer pageSize, Integer fileId) {
+    public List<SysFile> getAllFiles(Integer current, Integer pageSize, Integer fileId, Integer userId) {
         int offset = pageSize * (current - 1);
-        List<SysFile> SysFiles = sysfileMapper.getAllFiles(current, pageSize, fileId, offset);
-        return SysFiles;
+        
+        // // 先查询用户信息，确定是否是管理员
+        // SysUser user = sysUserMapper.selectById(userId);
+        
+        // // 如果是管理员，返回所有文件
+        // if (user != null && user.getIsadmin() == 1) {
+        //     return sysfileMapper.getAllFiles(current, pageSize, fileId, offset);
+        // }
+        
+        // 如果是普通用户，只返回自己上传的文件
+        return sysfileMapper.getFilesByUserId(current, pageSize, fileId, offset, userId);
     }
 
     @Override
@@ -46,8 +60,8 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
     }
 
     @Override
-    public void createFile(String fileName, String updateTime, String size) {
-        sysfileMapper.createFile(fileName, updateTime, size);
+    public void createFile(String fileName, String updateTime, String size, Integer userId) {
+        sysfileMapper.createFile(fileName, updateTime, size, userId);
     }
 
     @Override
