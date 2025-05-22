@@ -220,18 +220,20 @@ public class SysUserController {
     @ApiOperation("获取当前用户信息")
     @RequestMapping(value = "/currentState", method = RequestMethod.GET)
     public Map<String, Object> getCurrentState(HttpServletRequest request) {
-//        直接从springSecurity框架中获得登录用户信息
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetails principal = (UserDetails) authentication.getPrincipal();
-        String username = principal.getUsername();
-        String password = principal.getPassword();
-        SysUser user = SysUserService.findByUsername(username);
+        // 获取当前登录用户信息
+        LoginUser loginUser = (LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        SysUser currentUser = loginUser.getSysUser();
         Map<String, Object> map = new HashMap<>();
         map.put("currentUser", "");
         map.put("isAdmin", 0);
-        if (ObjectUtil.isNotNull(user)) {
-            map.put("currentUser", user.getUsername());
-            map.put("isAdmin", user.getIsadmin());
+        map.put("score", 0);
+        
+        if (ObjectUtil.isNotNull(currentUser)) {
+            map.put("currentUser", currentUser.getUsername());
+            map.put("isAdmin", currentUser.getIsadmin());
+            map.put("score", currentUser.getScore() != null ? currentUser.getScore() : 0);
+            // 添加日志输出，帮助调试
+            System.out.println("用户积分: " + currentUser.getScore());
         }
         return map;
     }

@@ -15,6 +15,7 @@ import com.example.labelMark.vo.constant.StatusEnum;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.web.bind.annotation.*;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import javax.annotation.Resource;
 import java.nio.file.Files;
@@ -160,38 +161,41 @@ public class MarkController {
         }
     }
 
-    //响应前端模型推理功能
     @PostMapping("/inferenceFunction")
     public Map<String, Object> PythonScript_inferenceFunction(@RequestBody Map<String, Object> request) {
         // 获取前端传来的参数
         String taskId = request.get("taskid").toString();
-        // user_id
         String userId = request.get("user_id").toString();
-        // 模型名称
         String model_name = request.get("model") != null ? request.get("model").toString() : "";
-
 
         // 获取 parameters 对象
         @SuppressWarnings("unchecked")
         Map<String, Object> params = (Map<String, Object>) request.get("parameters");
 
-        // 获取四个参数，处理可能的 null 值
+        // 获取参数，处理可能的 null 值
         String param1 = params.get("param1") != null ? params.get("param1").toString() : "";
         String param2 = params.get("param2") != null ? params.get("param2").toString() : "";
         String param3 = params.get("param3") != null ? params.get("param3").toString() : "";
         String param4 = params.get("param4") != null ? params.get("param4").toString() : "";
-        String param5 = params.get("param5") != null ? params.get("param5").toString() : "";
-        String param6 = params.get("param6") != null ? params.get("param6").toString() : "";
-        String param7 = params.get("param7") != null ? params.get("param7").toString() : "";
-        String param8 = params.get("param8") != null ? params.get("param8").toString() : "";
+        String categoryMapping = params.get("categoryMapping") != null ? params.get("categoryMapping").toString() : "{}";
 
+        // 验证并解析 categoryMapping
+        ObjectMapper objectMapper = new ObjectMapper();
+//        Map<String, Object> categoryMappingObj;
+//        try {
+//            categoryMappingObj = objectMapper.readValue(categoryMapping, new TypeReference<Map<String, Object>>() {});
+//        } catch (JsonProcessingException e) {
+//            e.printStackTrace();
+//            Map<String, Object> response = new HashMap<>();
+//            response.put("code", StatusEnum.FAIL.code);
+//            response.put("message", "解析类别映射失败: " + e.getMessage());
+//            return response;
+//        }
 
         // 获取 modelScope 数据
         String modelScopeStr = "";
         if (params.containsKey("modelScope") && params.get("modelScope") != null) {
             Object modelScope = params.get("modelScope");
-            // 将 modelScope 转换为 JSON 字符串
-            ObjectMapper objectMapper = new ObjectMapper();
             try {
                 modelScopeStr = objectMapper.writeValueAsString(modelScope);
             } catch (JsonProcessingException e) {
@@ -208,8 +212,6 @@ public class MarkController {
         // 设置文件路径
         Path mapfile_path = Paths.get(System.getProperty("user.dir") + File.separator +
                 "src/main/java/com/example/labelMark/resource/output");
-//        Path python_path = Paths.get(System.getProperty("user.dir") + File.separator +
-//                "src/main/java/com/example/labelMark/python_scripts/inference.py");
 
         // 准备请求体
         Map<String, Object> requestBody = new HashMap<>();
@@ -221,10 +223,7 @@ public class MarkController {
         requestBody.put("param2", param2);
         requestBody.put("param3", param3);
         requestBody.put("param4", param4);
-        requestBody.put("param5", param5);
-        requestBody.put("param6", param6);
-        requestBody.put("param7", param7);
-        requestBody.put("param8", param8);
+        requestBody.put("categoryMapping", categoryMapping); // 使用 JSON 字符串
         requestBody.put("modelScopeStr", modelScopeStr);
 
         // 发送 POST 请求到 FastAPI
@@ -233,73 +232,150 @@ public class MarkController {
         Map<String, Object> response = restTemplate.postForObject(url, requestBody, Map.class);
 
         return response;
-
-//        try {
-//            // 创建 ProcessBuilder，指定 Python 解释器和脚本路径
-//            ProcessBuilder pb = new ProcessBuilder("/home/change/anaconda3/envs/label/bin/python",
-//                    python_path.toString());
-//
-//            // 添加所有参数到命令行
-//            pb.command().add(taskId);          // taskId
-//            pb.command().add(mapfile_path.toString());  // mapfile_path
-//            pb.command().add(userId);    // userid
-//            pb.command().add(model_name);     // model_name
-//            pb.command().add(param1);          // param1
-//            pb.command().add(param2);          // param2
-//            pb.command().add(param3);          // param3
-//            pb.command().add(param4);          // param4
-//            pb.command().add(modelScopeStr);
-//            System.out.println("Command: " + pb.command());
-//
-//            // 启动进程
-//            Process process = pb.start();
-//
-//            // 读取标准输出
-//            BufferedReader stdInput = new BufferedReader(new InputStreamReader(process.getInputStream()));
-//            // 读取错误输出
-//            BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-//
-//            String s;
-//            StringBuilder output = new StringBuilder();
-//            while ((s = stdInput.readLine()) != null) {
-//                output.append(s).append("\n");
-//            }
-//
-//            StringBuilder errorOutput = new StringBuilder();
-//            while ((s = stdError.readLine()) != null) {
-//                errorOutput.append(s).append("\n");
-//            }
-//
-//            // 等待进程完成
-//            int exitCode = process.waitFor();
-//
-//            // 创建响应 Map
-//            Map<String, Object> response = new HashMap<>();
-//
-//            if (exitCode == 0) {
-//                // 成功
-//                System.out.println("Python 脚本输出: " + output);
-//                response.put("code", StatusEnum.SUCCESS.code);
-//                response.put("message", "模型推理成功");
-//                return response;
-//            } else {
-//                // 失败
-//                System.err.println("Python 脚本错误输出: " + errorOutput);
-//                response.put("code", StatusEnum.FAIL.code);
-//                response.put("message", "模型推理失败: " + errorOutput.toString());
-//                return response;
-//            }
-//
-//        } catch (IOException | InterruptedException e) {
-//            e.printStackTrace();
-//            Map<String, Object> response = new HashMap<>();
-//            response.put("code", StatusEnum.FAIL.code);
-//            response.put("message", "模型推理失败: " + e.getMessage());
-//            return response;
-//        }
     }
 
+//    //响应前端模型推理功能
+//    @PostMapping("/inferenceFunction")
+//    public Map<String, Object> PythonScript_inferenceFunction(@RequestBody Map<String, Object> request) {
+//        // 获取前端传来的参数
+//        String taskId = request.get("taskid").toString();
+//        // user_id
+//        String userId = request.get("user_id").toString();
+//        // 模型名称
+//        String model_name = request.get("model") != null ? request.get("model").toString() : "";
+//
+//
+//        // 获取 parameters 对象
+//        @SuppressWarnings("unchecked")
+//        Map<String, Object> params = (Map<String, Object>) request.get("parameters");
+//
+//        // 获取四个参数，处理可能的 null 值
+//        String param1 = params.get("param1") != null ? params.get("param1").toString() : "";
+//        String param2 = params.get("param2") != null ? params.get("param2").toString() : "";
+//        String param3 = params.get("param3") != null ? params.get("param3").toString() : "";
+//        String param4 = params.get("param4") != null ? params.get("param4").toString() : "";
+//        String param5 = params.get("param5") != null ? params.get("param5").toString() : "";
+//        String param6 = params.get("param6") != null ? params.get("param6").toString() : "";
+//        String param7 = params.get("param7") != null ? params.get("param7").toString() : "";
+//        String param8 = params.get("param8") != null ? params.get("param8").toString() : "";
+//
+//
+//        // 获取 modelScope 数据
+//        String modelScopeStr = "";
+//        if (params.containsKey("modelScope") && params.get("modelScope") != null) {
+//            Object modelScope = params.get("modelScope");
+//            // 将 modelScope 转换为 JSON 字符串
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            try {
+//                modelScopeStr = objectMapper.writeValueAsString(modelScope);
+//            } catch (JsonProcessingException e) {
+//                e.printStackTrace();
+//                Map<String, Object> response = new HashMap<>();
+//                response.put("code", StatusEnum.FAIL.code);
+//                response.put("message", "解析模型作用范围失败: " + e.getMessage());
+//                return response;
+//            }
+//        } else {
+//            modelScopeStr = "[]"; // 如果没有 modelScope，传递空数组
+//        }
+//
+//        // 设置文件路径
+//        Path mapfile_path = Paths.get(System.getProperty("user.dir") + File.separator +
+//                "src/main/java/com/example/labelMark/resource/output");
+////        Path python_path = Paths.get(System.getProperty("user.dir") + File.separator +
+////                "src/main/java/com/example/labelMark/python_scripts/inference.py");
+//
+//        // 准备请求体
+//        Map<String, Object> requestBody = new HashMap<>();
+//        requestBody.put("taskid", taskId);
+//        requestBody.put("mapfile_path", mapfile_path.toString());
+//        requestBody.put("user_id", userId);
+//        requestBody.put("model", model_name);
+//        requestBody.put("param1", param1);
+//        requestBody.put("param2", param2);
+//        requestBody.put("param3", param3);
+//        requestBody.put("param4", param4);
+//        requestBody.put("param5", param5);
+//        requestBody.put("param6", param6);
+//        requestBody.put("param7", param7);
+//        requestBody.put("param8", param8);
+//        requestBody.put("modelScopeStr", modelScopeStr);
+//
+//        // 发送 POST 请求到 FastAPI
+//        RestTemplate restTemplate = new RestTemplate();
+//        String url = "http://localhost:5000/inferenceFunction"; // FastAPI 服务地址
+//        Map<String, Object> response = restTemplate.postForObject(url, requestBody, Map.class);
+//
+//        return response;
+//    }
+
     //响应前端辅助功能
+//    @PostMapping("/assistFunction")
+//    public Map<String, Object> assistFunction(@RequestBody Map<String, Object> request) {
+//        // 获取前端传来的参数
+//        String taskId = request.get("taskid").toString();
+//        String functionName = request.get("functionName").toString();
+//        String assistInput = request.get("assistInput") != null ? request.get("assistInput").toString() : "";
+//        String userId = request.get("user_id") != null ? request.get("user_id").toString() : null;
+//        String modelName = request.get("modelName") != null ? request.get("modelName").toString() : null;
+//        @SuppressWarnings("unchecked")
+//        Map<String, Object> params = (Map<String, Object>) request.get("parameters");
+//        // 任务类型
+//        String tasktype = request.get("task_type") != null ? request.get("task_type").toString() : "";
+//
+//        // 获取四个参数，处理可能的 null 值
+//        String param1 = params.get("param1") != null ? params.get("param1").toString() : "";
+//        String param2 = params.get("param2") != null ? params.get("param2").toString() : "";
+//        String param3 = params.get("param3") != null ? params.get("param3").toString() : "";
+//        String param4 = params.get("param4") != null ? params.get("param4").toString() : "";
+//
+//        // 获取 modelScope 数据
+//        String modelScopeStr = "";
+//        if (params.containsKey("modelScope") && params.get("modelScope") != null) {
+//            Object modelScope = params.get("modelScope");
+//            // 将 modelScope 转换为 JSON 字符串
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            try {
+//                modelScopeStr = objectMapper.writeValueAsString(modelScope);
+//            } catch (JsonProcessingException e) {
+//                e.printStackTrace();
+//                Map<String, Object> response = new HashMap<>();
+//                response.put("code", StatusEnum.FAIL.code);
+//                response.put("message", "解析模型作用范围失败: " + e.getMessage());
+//                return response;
+//            }
+//        } else {
+//            modelScopeStr = ""; // 如果没有 modelScope，传递空数组
+//        }
+//
+//        // 设置文件路径
+//        Path mapfile_path = Paths.get(System.getProperty("user.dir") + File.separator +
+//                "src/main/java/com/example/labelMark/resource/output");
+//
+//        // 准备请求体
+//        Map<String, Object> requestBody = new HashMap<>();
+//        requestBody.put("taskid", taskId);
+//        requestBody.put("mapfile_path", mapfile_path.toString());
+//        requestBody.put("functionName", functionName);
+//        requestBody.put("assistInput", assistInput);
+//        requestBody.put("modelName", modelName);
+//        requestBody.put("param1", param1);
+//        requestBody.put("param2", param2);
+//        requestBody.put("param3", param3);
+//        requestBody.put("param4", param4);
+//        requestBody.put("user_id", userId);
+//        requestBody.put("modelScopeStr", modelScopeStr);
+//        requestBody.put("tasktype", tasktype);
+//
+//        System.out.println(requestBody);
+//
+//        // 发送 POST 请求到 FastAPI
+//        RestTemplate restTemplate = new RestTemplate();
+//        String url = "http://localhost:5000/assistFunction"; // FastAPI 服务地址
+//        Map<String, Object> response = restTemplate.postForObject(url, requestBody, Map.class);
+//
+//        return response;
+//    }
     @PostMapping("/assistFunction")
     public Map<String, Object> assistFunction(@RequestBody Map<String, Object> request) {
         // 获取前端传来的参数
@@ -308,23 +384,34 @@ public class MarkController {
         String assistInput = request.get("assistInput") != null ? request.get("assistInput").toString() : "";
         String userId = request.get("user_id") != null ? request.get("user_id").toString() : null;
         String modelName = request.get("modelName") != null ? request.get("modelName").toString() : null;
+        String tasktype = request.get("task_type") != null ? request.get("task_type").toString() : "";
         @SuppressWarnings("unchecked")
         Map<String, Object> params = (Map<String, Object>) request.get("parameters");
-        // 任务类型
-        String tasktype = request.get("task_type") != null ? request.get("task_type").toString() : "";
 
-        // 获取四个参数，处理可能的 null 值
+        // 获取参数，处理可能的 null 值
         String param1 = params.get("param1") != null ? params.get("param1").toString() : "";
         String param2 = params.get("param2") != null ? params.get("param2").toString() : "";
         String param3 = params.get("param3") != null ? params.get("param3").toString() : "";
         String param4 = params.get("param4") != null ? params.get("param4").toString() : "";
+        String categoryMapping = params.get("categoryMapping") != null ? params.get("categoryMapping").toString() : "{}";
+
+        // 验证并解析 categoryMapping
+        ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> categoryMappingObj;
+        try {
+            categoryMappingObj = objectMapper.readValue(categoryMapping, new TypeReference<Map<String, Object>>() {});
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            Map<String, Object> response = new HashMap<>();
+            response.put("code", StatusEnum.FAIL.code);
+            response.put("message", "解析类别映射失败: " + e.getMessage());
+            return response;
+        }
 
         // 获取 modelScope 数据
         String modelScopeStr = "";
         if (params.containsKey("modelScope") && params.get("modelScope") != null) {
             Object modelScope = params.get("modelScope");
-            // 将 modelScope 转换为 JSON 字符串
-            ObjectMapper objectMapper = new ObjectMapper();
             try {
                 modelScopeStr = objectMapper.writeValueAsString(modelScope);
             } catch (JsonProcessingException e) {
@@ -334,8 +421,6 @@ public class MarkController {
                 response.put("message", "解析模型作用范围失败: " + e.getMessage());
                 return response;
             }
-        } else {
-            modelScopeStr = ""; // 如果没有 modelScope，传递空数组
         }
 
         // 设置文件路径
@@ -353,6 +438,7 @@ public class MarkController {
         requestBody.put("param2", param2);
         requestBody.put("param3", param3);
         requestBody.put("param4", param4);
+        requestBody.put("categoryMapping", categoryMapping); // 使用 JSON 字符串
         requestBody.put("user_id", userId);
         requestBody.put("modelScopeStr", modelScopeStr);
         requestBody.put("tasktype", tasktype);

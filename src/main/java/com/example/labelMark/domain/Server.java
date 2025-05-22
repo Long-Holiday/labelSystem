@@ -55,5 +55,9 @@ public class Server implements Serializable {
     @ApiModelProperty("用户ID")
     @TableField("user_id")
     private Integer userId;
+    
+    @ApiModelProperty("影像集名称")
+    @TableField("set_name")
+    private String setName;
 
 }

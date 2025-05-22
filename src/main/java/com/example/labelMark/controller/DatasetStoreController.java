@@ -4,6 +4,9 @@ import com.example.labelMark.domain.DatasetStore;
 import com.example.labelMark.domain.ImageInfo;
 import com.example.labelMark.domain.Mark;
 import com.example.labelMark.domain.Task;
+import com.example.labelMark.domain.Dataset;
+import com.example.labelMark.domain.SysUser;
+import com.example.labelMark.vo.LoginUser;
 
 import com.example.labelMark.service.*;
 import com.example.labelMark.utils.*;
@@ -16,6 +19,7 @@ import org.json.JSONObject;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -28,6 +32,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -58,6 +63,12 @@ public class DatasetStoreController {
     @Resource
     private GeoServerService geoServerService;
 
+    @Resource
+    private DatasetService datasetService;
+
+    @Resource
+    private SysUserService sysUserService;
+
     @GetMapping("/getTotalImgNumBySampleId")
     public Result getTotalImgNumBySampleId(int sampleId) {
         int sum = datasetStoreService.getTotalImgNumBySampleId(sampleId);
@@ -73,50 +84,92 @@ public class DatasetStoreController {
 
 
     @GetMapping("/getDataSet")
-    public Result getDataSet(@RequestParam String username
-            ,@RequestParam Integer isAdmin
-            ,@RequestParam(required = false) Integer isPublic) {
+    public Result getDataSet(@RequestParam(required = false) String username
+            ,@RequestParam(required = false) Integer isAdmin
+            ,@RequestParam(required = false) Integer userId
+            ,@RequestParam(required = false) String sampleName) {
 
-        List<Map<String, Object>> taskIdArr;
+        Map<String, Object> res = new HashMap<>();
 
-        if (isAdmin == 1) {
-            System.out.println("Admin查询");
-            taskIdArr = taskService.findAllTask();
-        } else {
-            System.out.println("User查询");
-            if (isPublic == 1) {
-                taskIdArr = taskService.findPublicTask();
+        System.out.println("查询参数: username=" + username + ", isAdmin=" + isAdmin + ", userId=" + userId + ", sampleName=" + sampleName);
+        
+        // 如果用户ID存在，使用用户ID查询
+        if (userId != null) {
+            System.out.println("使用用户ID查询: " + userId);
+            
+            List<Map<String, Object>> taskDatasetInfos;
+            
+            // 如果有样本名称过滤条件，使用带样本名称的查询方法
+            if (sampleName != null && !sampleName.isEmpty()) {
+                taskDatasetInfos = datasetStoreService.findDatasetByUserIdAndSampleName(userId, sampleName);
             } else {
-                taskIdArr = taskService.findTasksByUsername(username);
+                taskDatasetInfos = datasetStoreService.findDatasetByUserIdAndPublic(userId);
             }
-        }
-        System.out.println(taskIdArr);
-
-        Map<String, Object> res = new HashMap<>();;
-        if (!taskIdArr.isEmpty()) {
-
-            List<Map<String, Object>> taskDatasetInfos = new ArrayList<>();
-            List<String> usernameLists = new ArrayList<>();
-
-
-            for (Map<String, Object> map : taskIdArr) {
-
-                Object value = map.get("task_id");
-                System.out.println(value);
-                List<Map<String, Object>> datasetInfoList = datasetStoreService.findDatasetByTaskId((Integer) value);
-                taskDatasetInfos.addAll(datasetInfoList);
-
-                List<String> userList = taskService.findUserListByTaskId((Integer) value);
-                usernameLists.addAll(userList);
-
-            }
-
+            
             if (!taskDatasetInfos.isEmpty()) {
                 res.put("taskDatasetInfos", taskDatasetInfos);
+                
+                // 获取相关的用户列表
+                List<String> usernameLists = new ArrayList<>();
+                for (Map<String, Object> dataset : taskDatasetInfos) {
+                    Integer taskId = (Integer) dataset.get("task_id");
+                    List<String> userList = taskService.findUserListByTaskId(taskId);
+                    usernameLists.addAll(userList);
+                }
                 res.put("usernameLists", usernameLists);
+            } else {
+                res.put("taskDatasetInfos", new ArrayList<>());
+                res.put("usernameLists", new ArrayList<>());
             }
-
+        } 
+        // 如果用户ID不存在但用户名存在，使用用户名查询
+        else if (username != null && !username.isEmpty()) {
+            System.out.println("使用用户名查询: " + username);
+            
+            // 先通过用户名查找用户ID
+            SysUser user = sysUserService.findByUsername(username);
+            if (user != null && user.getUserid() != null) {
+                // 找到用户ID后，使用用户ID查询
+                Integer foundUserId = user.getUserid();
+                System.out.println("通过用户名找到用户ID: " + foundUserId);
+                
+                List<Map<String, Object>> taskDatasetInfos;
+                
+                // 如果有样本名称过滤条件，使用带样本名称的查询方法
+                if (sampleName != null && !sampleName.isEmpty()) {
+                    taskDatasetInfos = datasetStoreService.findDatasetByUserIdAndSampleName(foundUserId, sampleName);
+                } else {
+                    taskDatasetInfos = datasetStoreService.findDatasetByUserIdAndPublic(foundUserId);
+                }
+                
+                if (!taskDatasetInfos.isEmpty()) {
+                    res.put("taskDatasetInfos", taskDatasetInfos);
+                    
+                    // 获取相关的用户列表
+                    List<String> usernameLists = new ArrayList<>();
+                    for (Map<String, Object> dataset : taskDatasetInfos) {
+                        Integer taskId = (Integer) dataset.get("task_id");
+                        List<String> userList = taskService.findUserListByTaskId(taskId);
+                        usernameLists.addAll(userList);
+                    }
+                    res.put("usernameLists", usernameLists);
+                } else {
+                    res.put("taskDatasetInfos", new ArrayList<>());
+                    res.put("usernameLists", new ArrayList<>());
+                }
+            } else {
+                System.out.println("未找到用户名对应的用户: " + username);
+                res.put("taskDatasetInfos", new ArrayList<>());
+                res.put("usernameLists", new ArrayList<>());
+            }
         }
+        // 如果既没有用户ID也没有用户名，返回空结果
+        else {
+            System.out.println("没有有效的查询参数，返回空结果");
+            res.put("taskDatasetInfos", new ArrayList<>());
+            res.put("usernameLists", new ArrayList<>());
+        }
+        
         return ResultGenerator.getSuccessResult(res);
     }
 
@@ -560,6 +613,9 @@ public class DatasetStoreController {
     @PostMapping("/generateDataset")
     public Result generateDataset(@RequestBody Map<String,Object> map) throws IOException {
         Integer taskId = Integer.valueOf(map.get("taskid").toString());
+        // 获取当前用户ID
+        Integer currentUserId = Integer.valueOf(map.get("userId").toString());
+        
         Integer idExist = datasetStoreService.hasGenerateDataset(taskId);
         System.out.println(idExist);
         if (idExist != 0){
@@ -567,12 +623,21 @@ public class DatasetStoreController {
             return ResultGenerator.getSuccessResult("该样本已存在");
         }
 
+        // 获取任务信息
         Task task = taskService.selectTaskById(taskId);
+        if (task == null) {
+            return ResultGenerator.getFailResult("任务不存在");
+        }
+        
+        // 获取任务名称
+        String taskName = task.getTaskName();
+        System.out.println("任务名称: " + taskName);
 
-        List<Mark> marks =markService.selectMarkById(taskId);
+        List<Mark> marks = markService.selectMarkById(taskId);
 
-        int sampleId = datasetStoreService.createDataset(taskId);
-        System.out.println(sampleId);
+        // 创建数据集，使用任务名称作为样本名称
+        int sampleId = datasetStoreService.createDatasetWithName(taskId, currentUserId, taskName);
+        System.out.println("创建样本ID: " + sampleId + ", 样本名称: " + taskName);
         String markTaskId = "mark_" + taskId;
         Path downloadDir = Paths.get(System.getProperty("user.dir")+ File.separator + "src/main/java/com/example/labelMark/resource/public/dataset_temp/", markTaskId);
         Path outputDir = Paths.get(System.getProperty("user.dir")+ File.separator + "src/main/java/com/example/labelMark/resource/public/dataset/COCO_" + taskId);
@@ -778,6 +843,122 @@ public class DatasetStoreController {
         return ResultGenerator.getSuccessResult("样本生成成功");
     }
 
+    @PostMapping("/downloadBySampleIds")
+    public Result downloadBySampleIds(@RequestBody Map<String,Object> map, HttpServletResponse response) {
+        try {
+            // 获取当前下载用户
+            LoginUser loginUser = (LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            SysUser downloader = loginUser.getSysUser();
+            Integer downloaderId = downloader.getUserid();
+
+            String sampleIdsStr = (String) map.get("sampleIds");
+            if (sampleIdsStr == null || sampleIdsStr.isEmpty()) {
+                return ResultGenerator.getFailResult("样本ID不能为空");
+            }
+
+            List<String> sampleIdStrList = Arrays.asList(sampleIdsStr.split(","));
+            List<Integer> taskIdsForDownload = new ArrayList<>();
+            
+            // 存储每个sampleId对应的Dataset信息，避免重复查询
+            Map<Integer, Dataset> sampleToDatasetMap = new HashMap<>(); 
+
+            // 预检查和积分操作的准备
+            for (String sampleIdSingleStr : sampleIdStrList) {
+                try {
+                    Integer currentSampleStoreId = Integer.parseInt(sampleIdSingleStr.trim());
+                    
+                    Dataset targetDataset = datasetService.findDatasetByContainedSampleStoreId(currentSampleStoreId);
+
+                    if (targetDataset == null) {
+                        return ResultGenerator.getFailResult("未找到样本ID " + currentSampleStoreId + " 对应的共享数据集信息");
+                    }
+                    
+                    sampleToDatasetMap.put(currentSampleStoreId, targetDataset); 
+
+                    Integer pointsToDeduct = targetDataset.getGoal();
+                    // Integer datasetOwnerId = targetDataset.getUserId(); // datasetOwnerId 在实际扣费时才需要
+
+                    if (pointsToDeduct != null && pointsToDeduct > 0) {
+                        SysUser currentDownloaderState = sysUserService.getById(downloaderId); 
+                        if (currentDownloaderState.getScore() == null || currentDownloaderState.getScore() < pointsToDeduct) {
+                            return ResultGenerator.getFailResult("积分不足以下载样本ID " + currentSampleStoreId + "，需要 " + pointsToDeduct + " 积分");
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("无效的样本ID (格式错误): " + sampleIdSingleStr);
+                    return ResultGenerator.getFailResult("无效的样本ID格式: " + sampleIdSingleStr);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return ResultGenerator.getFailResult("处理样本ID " + sampleIdSingleStr + " 时发生错误: " + e.getMessage());
+                }
+            }
+            
+            // 如果所有检查通过，执行实际的积分扣除和增加，然后收集 taskIds
+            List<Runnable> successfulScoreOperations = new ArrayList<>(); // 用于记录成功的积分操作，以便回滚
+
+            for (String sampleIdSingleStr : sampleIdStrList) {
+                Integer currentSampleStoreId = Integer.parseInt(sampleIdSingleStr.trim()); 
+                Dataset targetDataset = sampleToDatasetMap.get(currentSampleStoreId); 
+                
+                Integer pointsToDeduct = targetDataset.getGoal();
+                Integer datasetOwnerId = targetDataset.getUserId();
+
+                if (pointsToDeduct != null && pointsToDeduct > 0) {
+                    // 扣除下载者积分
+                    boolean subtractSuccess = sysUserService.subtractUserScore(downloaderId, pointsToDeduct);
+                    if (!subtractSuccess) {
+                        // 回滚之前成功的积分操作
+                        for (Runnable undo : successfulScoreOperations) {
+                            undo.run();
+                        }
+                        return ResultGenerator.getFailResult("扣除积分失败，样本ID " + currentSampleStoreId);
+                    }
+                    successfulScoreOperations.add(() -> sysUserService.addUserScore(downloaderId, pointsToDeduct)); // 添加回滚操作
+
+                    // 为数据集发布者增加积分
+                    if (datasetOwnerId != null) {
+                        boolean addSuccess = sysUserService.addUserScore(datasetOwnerId, pointsToDeduct);
+                        if(!addSuccess){
+                            // 回滚之前成功的积分操作 (包括当前下载者的扣分)
+                            for (Runnable undo : successfulScoreOperations) {
+                                undo.run();
+                            }
+                            // sysUserService.addUserScore(downloaderId, pointsToDeduct); // 已包含在回滚操作列表中
+                            return ResultGenerator.getFailResult("为发布者增加积分失败，样本ID " + currentSampleStoreId);
+                        }
+                        successfulScoreOperations.add(() -> sysUserService.subtractUserScore(datasetOwnerId, pointsToDeduct)); // 添加回滚操作
+                    }
+                }
+
+                DatasetStore datasetStore = datasetStoreService.getById(currentSampleStoreId);
+                if (datasetStore != null && datasetStore.getTaskId() != null) {
+                    if (!taskIdsForDownload.contains(datasetStore.getTaskId())) { 
+                        taskIdsForDownload.add(datasetStore.getTaskId());
+                    }
+                } else {
+                     System.out.println("警告: 未找到 DatasetStore 记录，ID: " + currentSampleStoreId + "，在积分操作之后。");
+                }
+            }
+
+            if (taskIdsForDownload.isEmpty()) {
+                 // 如果没有任务ID，但积分操作已执行，需要回滚
+                for (Runnable undo : successfulScoreOperations) {
+                    undo.run();
+                }
+                return ResultGenerator.getFailResult("根据提供的样本ID未能找到有效的任务进行下载");
+            }
+            
+            Map<String, Object> taskIdsMap = new HashMap<>();
+            taskIdsMap.put("taskIds", taskIdsForDownload);
+            return downloadMultipleDatasets(taskIdsMap, response); 
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            // 注意：这里的通用异常捕获可能无法回滚积分，因为 successfulScoreOperations 列表在此作用域外
+            // 更健壮的事务管理可能需要将整个积分操作和下载逻辑包装在一个服务层方法中，并使用 @Transactional
+            return ResultGenerator.getFailResult("下载失败：" + e.getMessage());
+        }
+    }
 
     private static void createDirectoryIfNotExists(Path path) {
         if (Files.notExists(path)) {

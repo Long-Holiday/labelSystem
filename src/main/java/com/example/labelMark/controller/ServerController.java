@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONObject;
 
 import com.example.labelMark.domain.Server;
+import com.example.labelMark.domain.SysFile;
+import com.example.labelMark.service.AsyncPublishService;
 import com.example.labelMark.service.ServerService;
 import com.example.labelMark.utils.GeoServerRESTClient;
 import com.example.labelMark.utils.ResultGenerator;
@@ -57,6 +59,8 @@ public class ServerController {
     private ServerService serverService;
     @Resource
     private SysFileService sysFileService;
+    @Resource
+    private AsyncPublishService asyncPublishService;
 
     @Resource
     private GeoServerRESTClient geoServerRESTClient;
@@ -74,6 +78,21 @@ public class ServerController {
         // 用当前用户ID查询服务列表
         List<Server> servers = serverService.getServers(userId);
         return ResultGenerator.getSuccessResult(servers);
+    }
+
+    @GetMapping("/getServersBySetName")
+    public Result getServersBySetName() {
+        // 获取当前登录用户
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        
+        // 从Authentication中获取LoginUser对象
+        LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+        // 获取用户ID
+        Integer userId = loginUser.getSysUser().getUserid();
+        
+        // 用当前用户ID查询按影像集分组的服务列表
+        Map<String, List<String>> serversBySetName = serverService.getServersBySetName(userId);
+        return ResultGenerator.getSuccessResult(serversBySetName);
     }
 
     @DeleteMapping("/deleteServer/{serName}")
@@ -118,6 +137,12 @@ public class ServerController {
             server.setSerName(sername);
             server.setUserId(userId); // 设置用户ID
             
+            // 获取文件的影像集名称
+            SysFile sysFile = sysFileService.getFileByFileName(filename);
+            if (sysFile != null && sysFile.getSetName() != null) {
+                server.setSetName(sysFile.getSetName());
+            }
+            
             boolean isInserted = serverService.createServer(server);
             if (isInserted) {
 //                TODO 使用fileId来唯一限定
@@ -131,77 +156,38 @@ public class ServerController {
             return ResultGenerator.getFailResult("创建失败"+ e.getMessage());
         }
     }
-
-//    @GetMapping ("/downloadServerImg")
-//    public Result downloadServerImg(String serverName){
-//
-//        String jsonStr = geoServerRESTClient.GeoServerString(serverName);
-//        System.out.println(jsonStr);
-//        // 创建一个JSONObject来解析JSON字符串
-//        JSONObject jsonObj = new JSONObject(jsonStr);
-//
-//        // 从JSONObject中提取图层信息
-//        JSONObject featureType = jsonObj.getJSONObject("featureType");
-//
-//        // 提取图层的名称
-////        String name = featureType.getString("name");
-//
-//        // 提取图层的空间参考系统（SRS）
-//        String srs = featureType.getString("srs");
-//
-//        // 从图层信息中提取边界框（nativeBoundingBox）
-//        JSONObject boundingBox = featureType.getJSONObject("nativeBoundingBox");
-//
-//        // 提取minx、maxx、miny和maxy的值
-//        double minx = boundingBox.getDouble("minx");
-//        double maxx = boundingBox.getDouble("maxx");
-//        double miny = boundingBox.getDouble("miny");
-//        double maxy = boundingBox.getDouble("maxy");
-//
-//        double width = Math.ceil(((maxx - minx) / (maxy - miny)) * 600);
-//
-//
-//        // 构建WMS请求参数
-//        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-//        // 在这里WMS服务通常用于请求地图图像，而不是用于下载矢量数据文件（如.shp）。
-//        // 如果想从GeoServer下载.shp文件，应该使用WFS（Web Feature Service）而不是WMS。
-//        params.add("service", "WMS");
-//        params.add("version", "1.1.0");
-//        params.add("request", "GetMap");
-//        params.add("layers", "LUU:"+ serverName);
-//        params.add("styles", "");
-//        params.add("bbox", String.format("%f,%f,%f,%f", minx, miny, maxx, maxy));
-//        params.add("width", String.valueOf((int)width));
-//        params.add("height", "600");
-//        params.add("srs", srs);
-//        params.add("format", "image/tiff");
-//
-//        try {
-//            // 发送WMS请求
-//            HttpClient httpClient = HttpClient.newHttpClient();
-//            HttpRequest request = buildRequest("/LUU/wms", params); // 假设 params 是你的查询参数
-//
-//            HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
-//            System.out.println(response);
-//            // 将图片数据写入文件
-//            if (response.statusCode() == 500) {
-//                // 获取响应体
-//                InputStream inputStream = response.body();
-//                Path filePath = Paths.get(DOWNLOAD_DIR, serverName + ".jpeg");
-//
-//                // 将输入流写入文件
-//                Files.copy(inputStream, filePath);
-//                // 关闭输入流
-//                inputStream.close();
-//
-//                return ResultGenerator.getSuccessResult("Image downloaded successfully to" + filePath);
-//            } else {
-//                return ResultGenerator.getFailResult("Failed to download image.");
-//            }
-//        } catch (Exception e) {
-//            return ResultGenerator.getFailResult("An error occurred: " + e.getMessage());
-//        }
-//    }
+    
+    @PostMapping("/publishSet")
+    public Result publishSet(@RequestBody Map<String, Object> map) {
+        try {
+            // 获取文件ID列表
+            List<Integer> fileIds = (List<Integer>) map.get("fileIds");
+            if (fileIds == null || fileIds.isEmpty()) {
+                return ResultGenerator.getFailResult("请选择要发布的文件");
+            }
+            
+            // 获取服务描述等信息
+            String serdesc = map.containsKey("serdesc") ? map.get("serdesc").toString() : "批量发布的服务";
+            String seryear = map.containsKey("seryear") ? map.get("seryear").toString() : String.valueOf(java.time.Year.now().getValue());
+            String publisher = map.containsKey("publisher") ? map.get("publisher").toString() : "系统";
+            String publishtime = map.containsKey("publishtime") ? map.get("publishtime").toString() : 
+                java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            
+            // 获取当前登录用户
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+            Integer userId = loginUser.getSysUser().getUserid();
+            
+            // 异步处理每个文件的发布
+            for (Integer fileId : fileIds) {
+                asyncPublishService.publishSingleImageToGeoServer(fileId, userId, serdesc, seryear, publisher, publishtime);
+            }
+            
+            return ResultGenerator.getSuccessResult("发布任务已提交，正在后台处理");
+        } catch (Exception e) {
+            return ResultGenerator.getFailResult("提交发布任务失败: " + e.getMessage());
+        }
+    }
 
     @GetMapping ("/downloadServerImg")
     public Result downloadServerImg(String serverName) throws IOException {
@@ -240,8 +226,6 @@ public class ServerController {
             } else {
                 return ResultGenerator.getFailResult("GET request not worked. Response code: " + responseCode);
             }
-
-
     }
 
     private String getBasicAuthToken() {
@@ -258,5 +242,4 @@ public class ServerController {
                 .GET()
                 .build();
     }
-
 }

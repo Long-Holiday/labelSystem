@@ -39,6 +39,8 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
         task.setMapServer(mapServer);
         task.setUserId(userId);
         task.setTaskClass(taskClass);
+        // 初始化积分为0
+        task.setScore(0);
         boolean isSaved = save(task);
 //        taskMapper.insert(task);
         return isSaved == true ? task.getTaskId() : -1;
@@ -188,5 +190,16 @@ public class TaskServiceImpl extends ServiceImpl<TaskMapper, Task> implements Ta
     @Override
     public void updateTaskSubmitter(Integer taskId, Integer userId) {
         taskMapper.updateTaskSubmitter(taskId, userId);
+    }
+
+    /**
+     * 更新任务的积分
+     *
+     * @param taskId 任务ID
+     * @param score 积分
+     */
+    @Override
+    public void updateTaskScore(Integer taskId, Integer score) {
+        taskMapper.updateTaskScore(taskId, score);
     }
 }

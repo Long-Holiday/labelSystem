@@ -27,15 +27,25 @@ CREATE TABLE "public"."dataset" (
   "set_dess" text COLLATE "pg_catalog"."default",
   "thumb_url" path,
   "num" int4,
-  "contact" varchar(255) COLLATE "pg_catalog"."default",
+  "cont" varchar(255) COLLATE "pg_catalog"."default",
   "email" varchar(255) COLLATE "pg_catalog"."default",
   "sorts" varchar COLLATE "pg_catalog"."default",
   "user_id" int4,
   "goal" int4,
-  "class" varchar(255) COLLATE "pg_catalog"."default",
-  "task_name" varchar(255) COLLATE "pg_catalog"."default"
+  "task_type" varchar(255) COLLATE "pg_catalog"."default",
+  "sample_id" varchar(255) COLLATE "pg_catalog"."default"
 )
 ;
+COMMENT ON COLUMN "public"."dataset"."task_type" IS '任务类型';
+COMMENT ON COLUMN "public"."dataset"."sample_id" IS '样本ID';
+COMMENT ON COLUMN "public"."dataset"."name" IS '样本集名称';
+COMMENT ON COLUMN "public"."dataset"."set_dess" IS '样本集描述';
+COMMENT ON COLUMN "public"."dataset"."thumb_url" IS '样本集缩略图';
+COMMENT ON COLUMN "public"."dataset"."num" IS '样本集数量';
+COMMENT ON COLUMN "public"."dataset"."cont" IS '联系人';
+COMMENT ON COLUMN "public"."dataset"."email" IS '邮箱';
+COMMENT ON COLUMN "public"."dataset"."sorts" IS '包含类别';
+COMMENT ON COLUMN "public"."dataset"."user_id" IS '用户ID';
 
 -- ----------------------------
 -- Table structure for dataset_store
@@ -45,7 +55,8 @@ CREATE TABLE "public"."dataset_store" (
   "sample_id" int4 NOT NULL DEFAULT nextval('datasetstore_seq'::regclass),
   "sample_name" varchar(255) COLLATE "pg_catalog"."default",
   "task_id" int4,
-  "is_public" int4
+  "is_public" int4,
+  "user_id" int4
 )
 ;
 COMMENT ON COLUMN "public"."dataset_store"."is_public" IS '1公开，0不公开';
@@ -60,7 +71,8 @@ CREATE TABLE "public"."file" (
   "update_time" varchar(255) COLLATE "pg_catalog"."default",
   "status" int4,
   "size" varchar(255) COLLATE "pg_catalog"."default",
-  "user_id" int4
+  "user_id" int4,
+  "set_name" varchar(255)
 )
 ;
 COMMENT ON COLUMN "public"."file"."status" IS '1 已发布 ，0 未发布';

@@ -17,9 +17,30 @@ import java.util.Map;
  */
 public interface DatasetStoreService extends IService<DatasetStore> {
 
-    Integer createDataset(int taskId);
+    Integer createDataset(int taskId, int userId);
+    
+    /**
+     * 创建数据集，并设置样本名称
+     * 
+     * @param taskId 任务ID
+     * @param userId 用户ID
+     * @param sampleName 样本名称
+     * @return 样本ID
+     */
+    Integer createDatasetWithName(int taskId, int userId, String sampleName);
 
     List<Map<String, Object>> findDatasetByTaskId(int taskId);
+    
+    List<Map<String, Object>> findDatasetByUserIdAndPublic(int userId);
+    
+    /**
+     * 根据用户ID和样本名称查询数据集
+     * 
+     * @param userId 用户ID
+     * @param sampleName 样本名称
+     * @return 数据集列表
+     */
+    List<Map<String, Object>> findDatasetByUserIdAndSampleName(int userId, String sampleName);
 
     void updateDatasetStatusBySampleId(int isPublic, int sampleId);
 

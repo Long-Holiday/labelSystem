@@ -86,6 +86,7 @@ public class SysFileController {
         String fileName = map.get("fileName").toString();
         String updatetime = map.get("updatetime").toString();
         String size = map.get("size").toString();
+        String setName = map.containsKey("setName") ? map.get("setName").toString() : null;
         String[] fileNameArr = fileName.split("\\.");
         String chunkDir = Paths.get(TEMP_DIR, fileNameArr[0]).toString();
         String destFilePath = Paths.get(UPLOAD_DIR, fileName).toString(); // Include file name and extension
@@ -126,8 +127,8 @@ public class SysFileController {
                     .map(Path::toFile)
                     .forEach(File::delete);
 
-            // 在数据库中创建文件记录，包含用户ID
-            sysfileService.createFile(fileName, updatetime, size, userId);
+            // 在数据库中创建文件记录，包含用户ID和影像集名称
+            sysfileService.createFile(fileName, updatetime, size, userId, setName);
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -170,7 +171,8 @@ public class SysFileController {
     @ApiOperation("")
     public Map getAllFiles(Integer current,
                            Integer pageSize,
-                           @RequestParam(required = false) Integer fileId) {
+                           @RequestParam(required = false) Integer fileId,
+                           @RequestParam(required = false) String setName) {
         try {
             //            无参时默认值
             if (ObjectUtil.isEmpty(current)) {
@@ -185,7 +187,7 @@ public class SysFileController {
             LoginUser loginUser = (LoginUser) authentication.getPrincipal();
             Integer userId = loginUser.getSysUser().getUserid();
             
-            List<SysFile> sysfiles = sysfileService.getAllFiles(current, pageSize, fileId, userId);
+            List<SysFile> sysfiles = sysfileService.getAllFiles(current, pageSize, fileId, userId, setName);
             Map<String, Object> map = new HashMap<>();
             map.put("code", StatusEnum.SUCCESS);
             map.put("data", sysfiles);

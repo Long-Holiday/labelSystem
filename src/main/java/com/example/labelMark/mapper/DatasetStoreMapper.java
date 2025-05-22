@@ -38,6 +38,27 @@ public interface DatasetStoreMapper extends BaseMapper<DatasetStore> {
             "JOIN dataset_store ON dataset_store.task_id = #{taskId} " +
             "WHERE task.task_id = #{taskId}")
     List<Map<String, Object>> findDatasetByTaskId(@Param("taskId") int taskId);
+    
+    @Select("SELECT task.*, dataset_store.sample_id, dataset_store.sample_name, dataset_store.is_public " +
+            "FROM task " +
+            "JOIN dataset_store ON dataset_store.task_id = task.task_id " +
+            "WHERE task.user_id = #{userId}")
+    List<Map<String, Object>> findDatasetByUserIdAndPublic(@Param("userId") int userId);
+    
+    /**
+     * 根据用户ID和任务名称查询数据集
+     * 注意：此方法搜索task表的task_name字段而不是dataset_store表的sample_name字段
+     * 
+     * @param userId 用户ID
+     * @param taskName 任务名称（搜索关键词）
+     * @return 数据集列表
+     */
+    @Select("SELECT task.*, dataset_store.sample_id, dataset_store.sample_name, dataset_store.is_public " +
+            "FROM task " +
+            "JOIN dataset_store ON dataset_store.task_id = task.task_id " +
+            "WHERE task.user_id = #{userId} " +
+            "AND task.task_name LIKE CONCAT('%', #{sampleName}, '%')")
+    List<Map<String, Object>> findDatasetByUserIdAndSampleName(@Param("userId") int userId, @Param("sampleName") String sampleName);
 
     @Select({"<script>",
             "SELECT COUNT(*) as count " ,
@@ -65,7 +86,11 @@ public interface DatasetStoreMapper extends BaseMapper<DatasetStore> {
     @Select("select COUNT(*) as count from dataset_store where task_id=#{taskId}")
     Integer hasGenerateDataset(int taskId);
 
-    @Insert("INSERT INTO dataset_store (task_id, is_public) VALUES (#{taskId}, #{isPublic})")
+    @Insert("INSERT INTO dataset_store (task_id, is_public, user_id) VALUES (#{taskId}, #{isPublic}, #{userId})")
     @Options(useGeneratedKeys = true, keyProperty = "sampleId", keyColumn = "sample_id")
     void createDataset(DatasetStore datasetStore);
+    
+    @Insert("INSERT INTO dataset_store (task_id, is_public, user_id, sample_name) VALUES (#{taskId}, #{isPublic}, #{userId}, #{sampleName})")
+    @Options(useGeneratedKeys = true, keyProperty = "sampleId", keyColumn = "sample_id")
+    void createDatasetWithName(DatasetStore datasetStore);
 }

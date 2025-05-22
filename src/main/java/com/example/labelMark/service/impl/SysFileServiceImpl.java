@@ -31,7 +31,7 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
     private SysUserMapper sysUserMapper;
 
     @Override
-    public List<SysFile> getAllFiles(Integer current, Integer pageSize, Integer fileId, Integer userId) {
+    public List<SysFile> getAllFiles(Integer current, Integer pageSize, Integer fileId, Integer userId, String setName) {
         int offset = pageSize * (current - 1);
         
         // // 先查询用户信息，确定是否是管理员
@@ -43,7 +43,7 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
         // }
         
         // 如果是普通用户，只返回自己上传的文件
-        return sysfileMapper.getFilesByUserId(current, pageSize, fileId, offset, userId);
+        return sysfileMapper.getFilesByUserId(current, pageSize, fileId, offset, userId, setName);
     }
 
     @Override
@@ -60,8 +60,8 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
     }
 
     @Override
-    public void createFile(String fileName, String updateTime, String size, Integer userId) {
-        sysfileMapper.createFile(fileName, updateTime, size, userId);
+    public void createFile(String fileName, String updateTime, String size, Integer userId, String setName) {
+        sysfileMapper.createFile(fileName, updateTime, size, userId, setName);
     }
 
     @Override
@@ -70,5 +70,17 @@ public class SysFileServiceImpl extends ServiceImpl<SysFileMapper, SysFile> impl
         wrapper.eq("file_name", fileName).set("status", 1);
         boolean update = update(null, wrapper);
         return update;
+    }
+    
+    @Override
+    public SysFile getFileByFileName(String fileName) {
+        QueryWrapper<SysFile> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("file_name", fileName);
+        return sysfileMapper.selectOne(queryWrapper);
+    }
+    
+    @Override
+    public SysFile getFileById(Integer fileId) {
+        return sysfileMapper.selectById(fileId);
     }
 }

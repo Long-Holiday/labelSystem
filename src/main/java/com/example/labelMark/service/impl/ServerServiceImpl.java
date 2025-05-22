@@ -13,7 +13,11 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -66,5 +70,32 @@ public class ServerServiceImpl extends ServiceImpl<ServerMapper, Server> impleme
         boolean save = save(server);
         return save;
     }
-
+    
+    @Override
+    public Map<String, List<String>> getServersBySetName(Integer userId) {
+        // 首先获取用户的所有服务
+        List<Server> servers = getServers(userId);
+        
+        // 按照set_name分组，对于每个set_name，收集服务名称列表
+        Map<String, List<String>> result = new HashMap<>();
+        
+        // 分组处理，创建影像集名称到服务名称列表的映射
+        for (Server server : servers) {
+            String setName = server.getSetName();
+            // 如果set_name为空，或为null，则分到"未分组"类别
+            if (setName == null || setName.trim().isEmpty()) {
+                setName = "未分组";
+            }
+            
+            // 如果map中没有这个key，则创建新的list
+            if (!result.containsKey(setName)) {
+                result.put(setName, new ArrayList<>());
+            }
+            
+            // 把服务名称加入到对应的列表中
+            result.get(setName).add(server.getSerName());
+        }
+        
+        return result;
+    }
 }

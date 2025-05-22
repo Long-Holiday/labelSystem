@@ -68,4 +68,12 @@ public interface TaskService extends IService<Task> {
      * @param userId 用户ID
      */
     void updateTaskSubmitter(Integer taskId, Integer userId);
+    
+    /**
+     * 更新任务的积分
+     *
+     * @param taskId 任务ID
+     * @param score 积分
+     */
+    void updateTaskScore(Integer taskId, Integer score);
 }

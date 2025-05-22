@@ -31,11 +31,24 @@ public class DatasetStoreServiceImpl extends ServiceImpl<DatasetStoreMapper, Dat
     private SampleImgMapper sampleImgMapper;
 
     @Override
-    public Integer createDataset(int taskId) {
+    public Integer createDataset(int taskId, int userId) {
         DatasetStore datasetStore = new DatasetStore();
         datasetStore.setTaskId(taskId);
         datasetStore.setIsPublic(0);
+        datasetStore.setUserId(userId);
         datasetStoreMapper.createDataset(datasetStore);
+        int sampleId = datasetStore.getSampleId();
+        return sampleId;
+    }
+    
+    @Override
+    public Integer createDatasetWithName(int taskId, int userId, String sampleName) {
+        DatasetStore datasetStore = new DatasetStore();
+        datasetStore.setTaskId(taskId);
+        datasetStore.setIsPublic(0);
+        datasetStore.setUserId(userId);
+        datasetStore.setSampleName(sampleName);
+        datasetStoreMapper.createDatasetWithName(datasetStore);
         int sampleId = datasetStore.getSampleId();
         return sampleId;
     }
@@ -43,6 +56,18 @@ public class DatasetStoreServiceImpl extends ServiceImpl<DatasetStoreMapper, Dat
     @Override
     public List<Map<String, Object>> findDatasetByTaskId(int taskId) {
         List<Map<String, Object>> taskDatasetInfos = datasetStoreMapper.findDatasetByTaskId(taskId);
+        return taskDatasetInfos;
+    }
+
+    @Override
+    public List<Map<String, Object>> findDatasetByUserIdAndPublic(int userId) {
+        List<Map<String, Object>> taskDatasetInfos = datasetStoreMapper.findDatasetByUserIdAndPublic(userId);
+        return taskDatasetInfos;
+    }
+    
+    @Override
+    public List<Map<String, Object>> findDatasetByUserIdAndSampleName(int userId, String sampleName) {
+        List<Map<String, Object>> taskDatasetInfos = datasetStoreMapper.findDatasetByUserIdAndSampleName(userId, sampleName);
         return taskDatasetInfos;
     }
 

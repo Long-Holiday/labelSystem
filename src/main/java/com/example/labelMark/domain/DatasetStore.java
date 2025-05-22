@@ -44,6 +44,9 @@ public class DatasetStore implements Serializable {
     @ApiModelProperty("1公开，0不公开")
     @TableField("is_public")
     private Integer isPublic;
+    
+    @TableField("user_id")
+    private Integer userId;
 
 
 }

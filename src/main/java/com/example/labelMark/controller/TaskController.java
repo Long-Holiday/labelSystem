@@ -73,144 +73,176 @@ public class TaskController {
         LoginUser loginUser = (LoginUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         SysUser currentUser = loginUser.getSysUser();
         Integer creatorUserId = currentUser.getUserid();
-        Integer teamId = currentUser.getTeamId();
-        
+        Integer teamId = currentUser.getTeamId(); // 获取当前用户的teamId
+        // Integer userid = currentUser.getUserid(); // creatorUserId 就是当前用户ID，这个可以移除或注释掉
+
         ArrayList<String> dateRange = (ArrayList<String>) map.get("daterange");
         String taskName = map.get("taskname").toString();
         String taskType = map.get("type").toString();
         String mapServer = map.get("mapserver").toString();
         String dateRangeStr = dateRange.get(0) + " " + dateRange.get(1);
-        
+
+        // 获取积分值（如果有）
+        Integer taskScore = 0;
+        if (map.containsKey("score") && map.get("score") != null) {
+            try {
+                Object scoreObj = map.get("score");
+                if (scoreObj instanceof Integer) {
+                    taskScore = (Integer) scoreObj;
+                } else if (scoreObj instanceof Double) { // 处理前端可能传Double的情况
+                    taskScore = ((Double) scoreObj).intValue();
+                } else {
+                    String scoreStr = scoreObj.toString().trim();
+                    if (!scoreStr.isEmpty()) {
+                        taskScore = (int) Double.parseDouble(scoreStr);
+                    }
+                }
+                if (taskScore < 0) taskScore = 0; // 确保积分为非负
+            } catch (NumberFormatException e) {
+                taskScore = 0; // 解析失败默认为0
+            }
+        }
+
         // 获取目标用户类型和对应的数据
-        String targetUserType = map.get("targetUserType").toString(); // allTeamMembers, specificTeamUsers, allNonTeamUsers
-        int taskClass = 0; // 默认为团队相关
-        
-        // 检查用户权限，普通用户只能指定"所有非管理员用户"
-        if (currentUser.getIsadmin() == 0) {
-            // 普通用户只能将任务分配给所有非管理员用户
-            targetUserType = "allNonAdminUsers";
-            taskClass = 1; // 非团队相关
-        } else {
-            // 管理员可以按照前端选择的目标用户类型处理
-            // 根据目标用户类型设置任务的class值
+        String targetUserType = map.get("targetUserType").toString();
+        int taskClass = 0; // 0: 团队相关, 1: 非团队相关 (个人或公开)
+
+        // 判断任务类型 (taskClass)
+        if (currentUser.getIsadmin() == 0) { // 普通用户发布
+            targetUserType = "allNonAdminUsers"; // 普通用户只能发布给所有非管理员
+            taskClass = 1; // 标记为非团队任务
+        } else { // 管理员发布
             if ("allNonTeamUsers".equals(targetUserType)) {
-                taskClass = 1; // 非团队相关
-            }
-        }
-        
-        // 创建任务
-        int taskId = taskService.createTask(dateRangeStr, taskName, taskType, mapServer, creatorUserId, taskClass);
-        if (taskId == -1) {
-            return ResultGenerator.getFailResult("插入任务失败");
-        }
-        
-        List<SysUser> targetUsers = new ArrayList<>();
-        
-        // 普通用户处理逻辑
-        if (currentUser.getIsadmin() == 0) {
-            // 获取所有非管理员用户
-            targetUsers = sysUserService.getAllNonAdminUsers();
-            
-            // 获取统一分配的样本类型
-            List<?> rawSelectedSampleTypes = (List<?>) map.get("selectedSampleTypes");
-            List<String> selectedSampleTypes = new ArrayList<>();
-            
-            // 将所有的样本类型转换为String
-            if (rawSelectedSampleTypes != null) {
-                for (Object type : rawSelectedSampleTypes) {
-                    selectedSampleTypes.add(String.valueOf(type));
-                }
-            }
-            
-            // 为每个用户创建task_accepted记录，分配相同的样本类型
-            for (SysUser user : targetUsers) {
-                String typeStr = String.join(",", selectedSampleTypes);
-                boolean success = taskAcceptedService.createTaskAccept(taskId, user.getUsername(), typeStr);
-                if (!success) {
-                    return ResultGenerator.getFailResult("为非管理员用户分配任务失败");
-                }
-            }
-        }
-        // 管理员处理逻辑
-        else {
-            // 根据目标用户类型决定用户列表和样本类型
-            if ("allTeamMembers".equals(targetUserType)) {
-                // 获取所有团队成员（除管理员外）
-                targetUsers = sysUserService.getUsersByTeamIdAndNotAdmin(teamId);
-                // 获取统一分配的样本类型
-                List<?> rawSelectedSampleTypes = (List<?>) map.get("selectedSampleTypes");
-                List<String> selectedSampleTypes = new ArrayList<>();
-                
-                // 将所有的样本类型转换为String
-                if (rawSelectedSampleTypes != null) {
-                    for (Object type : rawSelectedSampleTypes) {
-                        selectedSampleTypes.add(String.valueOf(type));
-                    }
-                }
-                
-                // 为每个用户创建task_accepted记录，分配相同的样本类型
-                for (SysUser user : targetUsers) {
-                    String typeStr = String.join(",", selectedSampleTypes);
-                    boolean success = taskAcceptedService.createTaskAccept(taskId, user.getUsername(), typeStr);
-                    if (!success) {
-                        return ResultGenerator.getFailResult("为团队成员分配任务失败");
-                    }
-                }
-                
-            } else if ("allNonTeamUsers".equals(targetUserType)) {
-                // 获取所有非团队成员（除管理员外）
-                targetUsers = sysUserService.getNonTeamUsersAndNotAdmin(teamId);
-                // 获取统一分配的样本类型
-                List<?> rawSelectedSampleTypes = (List<?>) map.get("selectedSampleTypes");
-                List<String> selectedSampleTypes = new ArrayList<>();
-                
-                // 将所有的样本类型转换为String
-                if (rawSelectedSampleTypes != null) {
-                    for (Object type : rawSelectedSampleTypes) {
-                        selectedSampleTypes.add(String.valueOf(type));
-                    }
-                }
-                
-                // 为每个用户创建task_accepted记录，分配相同的样本类型
-                for (SysUser user : targetUsers) {
-                    String typeStr = String.join(",", selectedSampleTypes);
-                    boolean success = taskAcceptedService.createTaskAccept(taskId, user.getUsername(), typeStr);
-                    if (!success) {
-                        return ResultGenerator.getFailResult("为非团队用户分配任务失败");
-                    }
-                }
-                
-            } else if ("specificTeamUsers".equals(targetUserType)) {
-                // 获取从前端传来的特定用户分配信息
-                ArrayList<Map<String, Object>> specificUserAssignments = 
-                    (ArrayList<Map<String, Object>>) map.get("specificUserAssignments");
-                
-                // 处理每个特定用户的分配
-                for (Map<String, Object> assignment : specificUserAssignments) {
-                    String username = assignment.get("username").toString();
-                    List<?> rawTypeArr = (List<?>) assignment.get("typeArr");
-                    List<String> typeStrList = new ArrayList<>();
-                    
-                    // 将所有类型转换为String
-                    if (rawTypeArr != null) {
-                        for (Object type : rawTypeArr) {
-                            typeStrList.add(String.valueOf(type));
-                        }
-                    }
-                    
-                    String typeStr = String.join(",", typeStrList);
-                    
-                    boolean success = taskAcceptedService.createTaskAccept(taskId, username, typeStr);
-                    if (!success) {
-                        return ResultGenerator.getFailResult("为特定用户分配任务失败");
-                    }
-                }
+                taskClass = 1; // 非团队任务
+            } else if ("specificTeamUsers".equals(targetUserType) || "allTeamMembers".equals(targetUserType)) {
+                taskClass = 0; // 团队任务
             } else {
                 return ResultGenerator.getFailResult("无效的目标用户类型");
             }
         }
-        
-        return ResultGenerator.getSuccessResult("任务创建成功");
+
+        // 非团队任务(taskClass=1)且设置了积分(taskScore > 0)，则检查并扣除创建者积分
+        if (taskClass == 1 && taskScore > 0) {
+            Integer creatorCurrentScore = currentUser.getScore() != null ? currentUser.getScore() : 0;
+            if (creatorCurrentScore < taskScore) {
+                return ResultGenerator.getFailResult("积分不足，无法创建任务。您需要 " + taskScore + " 积分，当前拥有 " + creatorCurrentScore + " 积分。");
+            }
+            boolean subtractSuccess = sysUserService.subtractUserScore(creatorUserId, taskScore);
+            if (!subtractSuccess) {
+                return ResultGenerator.getFailResult("扣除发布者积分失败，请重试");
+            }
+        }
+
+        // 创建任务
+        int taskId = taskService.createTask(dateRangeStr, taskName, taskType, mapServer, creatorUserId, taskClass);
+
+        if (taskId == -1) {
+            // 如果任务创建失败，并且之前扣除了积分，则回滚积分
+            if (taskClass == 1 && taskScore > 0) {
+                sysUserService.addUserScore(creatorUserId, taskScore); // 归还积分
+            }
+            return ResultGenerator.getFailResult("创建任务主体失败");
+        }
+
+        // 如果任务创建成功，且设置了任务积分，则更新任务表中的score字段
+        if (taskScore > 0) {
+            taskService.updateTaskScore(taskId, taskScore);
+        }
+
+        // ... (后续分配任务给用户的逻辑)
+        List<SysUser> targetUsers = new ArrayList<>();
+        Integer currentUserId = currentUser.getUserid(); // 用一个新变量存储，避免混淆
+
+        // 普通用户发布任务 (targetUserType 已经固定为 allNonAdminUsers)
+        if (currentUser.getIsadmin() == 0) {
+            targetUsers = sysUserService.getAllNonAdminUsers();
+            targetUsers.removeIf(user -> user.getUserid().equals(currentUserId)); // 排除创建者自己
+
+            List<?> rawSelectedSampleTypes = (List<?>) map.get("selectedSampleTypes");
+            List<String> typeIdListForNonAdmin = new ArrayList<>();
+            if (rawSelectedSampleTypes != null) {
+                for (Object typeId : rawSelectedSampleTypes) {
+                    typeIdListForNonAdmin.add(String.valueOf(typeId));
+                }
+            }
+            String commonTypeStr = String.join(",", typeIdListForNonAdmin);
+            for (SysUser user : targetUsers) {
+                if (!taskAcceptedService.createTaskAccept(taskId, user.getUsername(), commonTypeStr)) {
+                    // 注意：部分失败时的处理，是否要回滚已创建的task_accepted记录，或者整个事务回滚
+                    return ResultGenerator.getFailResult("为用户 '" + user.getUsername() + "' 分配任务失败");
+                }
+            }
+        } 
+        // 管理员发布任务
+        else {
+            if ("allTeamMembers".equals(targetUserType)) {
+                if (teamId == null) return ResultGenerator.getFailResult("管理员无团队信息，无法分配给所有团队成员");
+                targetUsers = sysUserService.getUsersByTeamIdAndNotAdmin(teamId);
+                targetUsers.removeIf(user -> user.getUserid().equals(currentUserId));
+
+                List<?> rawSelectedSampleTypes = (List<?>) map.get("selectedSampleTypes");
+                List<String> typeIdListForAllTeam = new ArrayList<>();
+                if (rawSelectedSampleTypes != null) {
+                    for (Object typeId : rawSelectedSampleTypes) {
+                        typeIdListForAllTeam.add(String.valueOf(typeId));
+                    }
+                }
+                String commonTypeStr = String.join(",", typeIdListForAllTeam);
+                for (SysUser user : targetUsers) {
+                    if (!taskAcceptedService.createTaskAccept(taskId, user.getUsername(), commonTypeStr)) {
+                        return ResultGenerator.getFailResult("为团队成员 '" + user.getUsername() + "' 分配任务失败");
+                    }
+                }
+            } else if ("allNonTeamUsers".equals(targetUserType)) {
+                targetUsers = sysUserService.getNonTeamUsersAndNotAdmin(teamId); // teamId 用于排除团队成员
+                targetUsers.removeIf(user -> user.getUserid().equals(currentUserId));
+                
+                List<?> rawSelectedSampleTypes = (List<?>) map.get("selectedSampleTypes");
+                List<String> typeIdListForAllNonTeam = new ArrayList<>();
+                 if (rawSelectedSampleTypes != null) {
+                    for (Object typeId : rawSelectedSampleTypes) {
+                        typeIdListForAllNonTeam.add(String.valueOf(typeId));
+                    }
+                }
+                String commonTypeStr = String.join(",", typeIdListForAllNonTeam);
+                for (SysUser user : targetUsers) {
+                    if (!taskAcceptedService.createTaskAccept(taskId, user.getUsername(), commonTypeStr)) {
+                        return ResultGenerator.getFailResult("为非团队用户 '" + user.getUsername() + "' 分配任务失败");
+                    }
+                }
+            } else if ("specificTeamUsers".equals(targetUserType)) {
+                if (teamId == null) return ResultGenerator.getFailResult("管理员无团队信息，无法分配给指定团队用户");
+                ArrayList<Map<String, Object>> specificUserAssignments = (ArrayList<Map<String, Object>>) map.get("specificUserAssignments");
+                if (specificUserAssignments == null || specificUserAssignments.isEmpty()) {
+                    return ResultGenerator.getFailResult("未指定任何用户进行任务分配");
+                }
+                for (Map<String, Object> assignment : specificUserAssignments) {
+                    String username = assignment.get("username").toString();
+                    SysUser targetUser = sysUserService.findByUsername(username);
+                    // 确保用户存在且是团队成员 (或者如果允许分配给非团队的特定用户，则调整此逻辑)
+                    if (targetUser == null || !teamId.equals(targetUser.getTeamId())) {
+                         return ResultGenerator.getFailResult("用户 '" + username + "' 不存在或不属于您的团队");
+                    }
+                    if (targetUser.getUserid().equals(currentUserId)) continue; // 不能分配给自己
+
+                    List<?> rawTypeArr = (List<?>) assignment.get("typeArr");
+                    List<String> typeStrList = new ArrayList<>();
+                    if (rawTypeArr != null) {
+                        for (Object typeId : rawTypeArr) {
+                            typeStrList.add(String.valueOf(typeId));
+                        }
+                    }
+                    if (typeStrList.isEmpty()) {
+                         return ResultGenerator.getFailResult("未给用户 '" + username + "' 分配任何样本类型");
+                    }
+                    String typeStr = String.join(",", typeStrList);
+                    if (!taskAcceptedService.createTaskAccept(taskId, username, typeStr)) {
+                        return ResultGenerator.getFailResult("为特定用户 '" + username + "' 分配任务失败");
+                    }
+                }
+            }
+        }
+        return ResultGenerator.getSuccessResult("任务创建及分配成功");
     }
 
     @GetMapping("/getTaskInfo")
@@ -377,11 +409,26 @@ public class TaskController {
 
     @PostMapping("/auditTask")
     public Result auditTask(@RequestBody Map<String, Object> map) {
-        String audit_feedback = ObjectUtil.toString(map.get("auditfeedback"));
-        Integer status = Integer.valueOf(ObjectUtil.toString(map.get("status")));
-        Integer taskId = Integer.valueOf(ObjectUtil.toString(map.get("taskid")));
-        taskService.auditTask(taskId, status, audit_feedback);
-        return ResultGenerator.getSuccessResult("编辑任务完成，提交成功");
+        Integer taskId = Integer.valueOf(map.get("taskId").toString());
+        Integer status = Integer.valueOf(map.get("status").toString());
+        String auditFeedback = ObjectUtil.toString(map.get("auditFeedback"));
+
+        taskService.auditTask(taskId, status, auditFeedback);
+
+        // 如果审核通过 (status == 1)，给提交者增加积分
+        if (status == 1) {
+            Task task = taskService.selectTaskById(taskId);
+            if (task != null && task.getSubmitterId() != null && task.getScore() != null && task.getScore() > 0) {
+                Integer submitterId = task.getSubmitterId();
+                Integer taskScore = task.getScore();
+                boolean addScoreSuccess = sysUserService.addUserScore(submitterId, taskScore);
+                if (!addScoreSuccess) {
+                    // 记录日志或进行其他错误处理，但通常不应阻止审核通过的流程
+                    System.err.println("为用户 " + submitterId + " 增加积分 " + taskScore + " 失败，任务ID: " + taskId);
+                }
+            }
+        }
+        return ResultGenerator.getSuccessResult("审核成功");
     }
 
     @GetMapping("/getPersonalTaskList")
@@ -587,3 +634,4 @@ public class TaskController {
         return response;
     }
 }
+
