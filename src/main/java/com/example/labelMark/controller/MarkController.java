@@ -41,6 +41,8 @@ import java.nio.file.Paths;
 import org.springframework.web.client.RestTemplate;
 import com.alibaba.fastjson.JSONObject;
 
+import com.example.labelMark.service.TaskExecutorService;
+
 /**
  * <p>
  *  前端控制器
@@ -67,6 +69,9 @@ public class MarkController {
 
     @Resource
     private TypeService typeService;
+
+    @Resource
+    private TaskExecutorService taskExecutorService;
 
     @PostMapping("/saveMarkInfo")
     public Result saveMarkInfo(@RequestBody Map<String, Object> request) {
@@ -177,26 +182,35 @@ public class MarkController {
         String param2 = params.get("param2") != null ? params.get("param2").toString() : "";
         String param3 = params.get("param3") != null ? params.get("param3").toString() : "";
         String param4 = params.get("param4") != null ? params.get("param4").toString() : "";
-        String categoryMapping = params.get("categoryMapping") != null ? params.get("categoryMapping").toString() : "{}";
-
-        // 验证并解析 categoryMapping
-        ObjectMapper objectMapper = new ObjectMapper();
-//        Map<String, Object> categoryMappingObj;
-//        try {
-//            categoryMappingObj = objectMapper.readValue(categoryMapping, new TypeReference<Map<String, Object>>() {});
-//        } catch (JsonProcessingException e) {
-//            e.printStackTrace();
-//            Map<String, Object> response = new HashMap<>();
-//            response.put("code", StatusEnum.FAIL.code);
-//            response.put("message", "解析类别映射失败: " + e.getMessage());
-//            return response;
-//        }
+        
+        // 处理categoryMapping，确保是有效的JSON格式
+        String categoryMapping = "{}";
+        if (params.get("categoryMapping") != null) {
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                Map<String, Object> mappingMap;
+                // 尝试将参数解析为Map
+                if (params.get("categoryMapping") instanceof String) {
+                    mappingMap = objectMapper.readValue(params.get("categoryMapping").toString(), 
+                                                      new TypeReference<Map<String, Object>>() {});
+                } else {
+                    mappingMap = (Map<String, Object>) params.get("categoryMapping");
+                }
+                // 转换为标准JSON字符串
+                categoryMapping = objectMapper.writeValueAsString(mappingMap);
+            } catch (Exception e) {
+                // 如果解析失败，使用空对象
+                System.err.println("解析categoryMapping失败: " + e.getMessage());
+                categoryMapping = "{}";
+            }
+        }
 
         // 获取 modelScope 数据
         String modelScopeStr = "";
         if (params.containsKey("modelScope") && params.get("modelScope") != null) {
             Object modelScope = params.get("modelScope");
             try {
+                ObjectMapper objectMapper = new ObjectMapper();
                 modelScopeStr = objectMapper.writeValueAsString(modelScope);
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
@@ -223,159 +237,20 @@ public class MarkController {
         requestBody.put("param2", param2);
         requestBody.put("param3", param3);
         requestBody.put("param4", param4);
-        requestBody.put("categoryMapping", categoryMapping); // 使用 JSON 字符串
+        requestBody.put("categoryMapping", categoryMapping); // 使用处理后的JSON字符串
         requestBody.put("modelScopeStr", modelScopeStr);
 
-        // 发送 POST 请求到 FastAPI
-        RestTemplate restTemplate = new RestTemplate();
-        String url = "http://localhost:5000/inferenceFunction"; // FastAPI 服务地址
-        Map<String, Object> response = restTemplate.postForObject(url, requestBody, Map.class);
-
+        // 将任务提交到队列异步执行
+        taskExecutorService.executeInferenceFunctionAsync(requestBody);
+        
+        // 返回任务已提交的响应
+        Map<String, Object> response = new HashMap<>();
+        response.put("code", 200);
+        response.put("message", "任务已提交，正在后台处理中");
         return response;
     }
 
-//    //响应前端模型推理功能
-//    @PostMapping("/inferenceFunction")
-//    public Map<String, Object> PythonScript_inferenceFunction(@RequestBody Map<String, Object> request) {
-//        // 获取前端传来的参数
-//        String taskId = request.get("taskid").toString();
-//        // user_id
-//        String userId = request.get("user_id").toString();
-//        // 模型名称
-//        String model_name = request.get("model") != null ? request.get("model").toString() : "";
-//
-//
-//        // 获取 parameters 对象
-//        @SuppressWarnings("unchecked")
-//        Map<String, Object> params = (Map<String, Object>) request.get("parameters");
-//
-//        // 获取四个参数，处理可能的 null 值
-//        String param1 = params.get("param1") != null ? params.get("param1").toString() : "";
-//        String param2 = params.get("param2") != null ? params.get("param2").toString() : "";
-//        String param3 = params.get("param3") != null ? params.get("param3").toString() : "";
-//        String param4 = params.get("param4") != null ? params.get("param4").toString() : "";
-//        String param5 = params.get("param5") != null ? params.get("param5").toString() : "";
-//        String param6 = params.get("param6") != null ? params.get("param6").toString() : "";
-//        String param7 = params.get("param7") != null ? params.get("param7").toString() : "";
-//        String param8 = params.get("param8") != null ? params.get("param8").toString() : "";
-//
-//
-//        // 获取 modelScope 数据
-//        String modelScopeStr = "";
-//        if (params.containsKey("modelScope") && params.get("modelScope") != null) {
-//            Object modelScope = params.get("modelScope");
-//            // 将 modelScope 转换为 JSON 字符串
-//            ObjectMapper objectMapper = new ObjectMapper();
-//            try {
-//                modelScopeStr = objectMapper.writeValueAsString(modelScope);
-//            } catch (JsonProcessingException e) {
-//                e.printStackTrace();
-//                Map<String, Object> response = new HashMap<>();
-//                response.put("code", StatusEnum.FAIL.code);
-//                response.put("message", "解析模型作用范围失败: " + e.getMessage());
-//                return response;
-//            }
-//        } else {
-//            modelScopeStr = "[]"; // 如果没有 modelScope，传递空数组
-//        }
-//
-//        // 设置文件路径
-//        Path mapfile_path = Paths.get(System.getProperty("user.dir") + File.separator +
-//                "src/main/java/com/example/labelMark/resource/output");
-////        Path python_path = Paths.get(System.getProperty("user.dir") + File.separator +
-////                "src/main/java/com/example/labelMark/python_scripts/inference.py");
-//
-//        // 准备请求体
-//        Map<String, Object> requestBody = new HashMap<>();
-//        requestBody.put("taskid", taskId);
-//        requestBody.put("mapfile_path", mapfile_path.toString());
-//        requestBody.put("user_id", userId);
-//        requestBody.put("model", model_name);
-//        requestBody.put("param1", param1);
-//        requestBody.put("param2", param2);
-//        requestBody.put("param3", param3);
-//        requestBody.put("param4", param4);
-//        requestBody.put("param5", param5);
-//        requestBody.put("param6", param6);
-//        requestBody.put("param7", param7);
-//        requestBody.put("param8", param8);
-//        requestBody.put("modelScopeStr", modelScopeStr);
-//
-//        // 发送 POST 请求到 FastAPI
-//        RestTemplate restTemplate = new RestTemplate();
-//        String url = "http://localhost:5000/inferenceFunction"; // FastAPI 服务地址
-//        Map<String, Object> response = restTemplate.postForObject(url, requestBody, Map.class);
-//
-//        return response;
-//    }
-
     //响应前端辅助功能
-//    @PostMapping("/assistFunction")
-//    public Map<String, Object> assistFunction(@RequestBody Map<String, Object> request) {
-//        // 获取前端传来的参数
-//        String taskId = request.get("taskid").toString();
-//        String functionName = request.get("functionName").toString();
-//        String assistInput = request.get("assistInput") != null ? request.get("assistInput").toString() : "";
-//        String userId = request.get("user_id") != null ? request.get("user_id").toString() : null;
-//        String modelName = request.get("modelName") != null ? request.get("modelName").toString() : null;
-//        @SuppressWarnings("unchecked")
-//        Map<String, Object> params = (Map<String, Object>) request.get("parameters");
-//        // 任务类型
-//        String tasktype = request.get("task_type") != null ? request.get("task_type").toString() : "";
-//
-//        // 获取四个参数，处理可能的 null 值
-//        String param1 = params.get("param1") != null ? params.get("param1").toString() : "";
-//        String param2 = params.get("param2") != null ? params.get("param2").toString() : "";
-//        String param3 = params.get("param3") != null ? params.get("param3").toString() : "";
-//        String param4 = params.get("param4") != null ? params.get("param4").toString() : "";
-//
-//        // 获取 modelScope 数据
-//        String modelScopeStr = "";
-//        if (params.containsKey("modelScope") && params.get("modelScope") != null) {
-//            Object modelScope = params.get("modelScope");
-//            // 将 modelScope 转换为 JSON 字符串
-//            ObjectMapper objectMapper = new ObjectMapper();
-//            try {
-//                modelScopeStr = objectMapper.writeValueAsString(modelScope);
-//            } catch (JsonProcessingException e) {
-//                e.printStackTrace();
-//                Map<String, Object> response = new HashMap<>();
-//                response.put("code", StatusEnum.FAIL.code);
-//                response.put("message", "解析模型作用范围失败: " + e.getMessage());
-//                return response;
-//            }
-//        } else {
-//            modelScopeStr = ""; // 如果没有 modelScope，传递空数组
-//        }
-//
-//        // 设置文件路径
-//        Path mapfile_path = Paths.get(System.getProperty("user.dir") + File.separator +
-//                "src/main/java/com/example/labelMark/resource/output");
-//
-//        // 准备请求体
-//        Map<String, Object> requestBody = new HashMap<>();
-//        requestBody.put("taskid", taskId);
-//        requestBody.put("mapfile_path", mapfile_path.toString());
-//        requestBody.put("functionName", functionName);
-//        requestBody.put("assistInput", assistInput);
-//        requestBody.put("modelName", modelName);
-//        requestBody.put("param1", param1);
-//        requestBody.put("param2", param2);
-//        requestBody.put("param3", param3);
-//        requestBody.put("param4", param4);
-//        requestBody.put("user_id", userId);
-//        requestBody.put("modelScopeStr", modelScopeStr);
-//        requestBody.put("tasktype", tasktype);
-//
-//        System.out.println(requestBody);
-//
-//        // 发送 POST 请求到 FastAPI
-//        RestTemplate restTemplate = new RestTemplate();
-//        String url = "http://localhost:5000/assistFunction"; // FastAPI 服务地址
-//        Map<String, Object> response = restTemplate.postForObject(url, requestBody, Map.class);
-//
-//        return response;
-//    }
     @PostMapping("/assistFunction")
     public Map<String, Object> assistFunction(@RequestBody Map<String, Object> request) {
         // 获取前端传来的参数
@@ -393,19 +268,27 @@ public class MarkController {
         String param2 = params.get("param2") != null ? params.get("param2").toString() : "";
         String param3 = params.get("param3") != null ? params.get("param3").toString() : "";
         String param4 = params.get("param4") != null ? params.get("param4").toString() : "";
-        String categoryMapping = params.get("categoryMapping") != null ? params.get("categoryMapping").toString() : "{}";
-
-        // 验证并解析 categoryMapping
-        ObjectMapper objectMapper = new ObjectMapper();
-        Map<String, Object> categoryMappingObj;
-        try {
-            categoryMappingObj = objectMapper.readValue(categoryMapping, new TypeReference<Map<String, Object>>() {});
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            Map<String, Object> response = new HashMap<>();
-            response.put("code", StatusEnum.FAIL.code);
-            response.put("message", "解析类别映射失败: " + e.getMessage());
-            return response;
+        
+        // 处理categoryMapping，确保是有效的JSON格式
+        String categoryMapping = "{}";
+        if (params.get("categoryMapping") != null) {
+            try {
+                ObjectMapper objectMapper = new ObjectMapper();
+                Map<String, Object> mappingMap;
+                // 尝试将参数解析为Map
+                if (params.get("categoryMapping") instanceof String) {
+                    mappingMap = objectMapper.readValue(params.get("categoryMapping").toString(), 
+                                    new TypeReference<Map<String, Object>>() {});
+                } else {
+                    mappingMap = (Map<String, Object>) params.get("categoryMapping");
+                }
+                // 转换为标准JSON字符串
+                categoryMapping = objectMapper.writeValueAsString(mappingMap);
+            } catch (Exception e) {
+                // 如果解析失败，使用空对象
+                System.err.println("解析categoryMapping失败: " + e.getMessage());
+                categoryMapping = "{}";
+            }
         }
 
         // 获取 modelScope 数据
@@ -413,6 +296,7 @@ public class MarkController {
         if (params.containsKey("modelScope") && params.get("modelScope") != null) {
             Object modelScope = params.get("modelScope");
             try {
+                ObjectMapper objectMapper = new ObjectMapper();
                 modelScopeStr = objectMapper.writeValueAsString(modelScope);
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
@@ -438,18 +322,20 @@ public class MarkController {
         requestBody.put("param2", param2);
         requestBody.put("param3", param3);
         requestBody.put("param4", param4);
-        requestBody.put("categoryMapping", categoryMapping); // 使用 JSON 字符串
+        requestBody.put("categoryMapping", categoryMapping); // 使用处理后的JSON字符串
         requestBody.put("user_id", userId);
         requestBody.put("modelScopeStr", modelScopeStr);
         requestBody.put("tasktype", tasktype);
 
         System.out.println(requestBody);
 
-        // 发送 POST 请求到 FastAPI
-        RestTemplate restTemplate = new RestTemplate();
-        String url = "http://localhost:5000/assistFunction"; // FastAPI 服务地址
-        Map<String, Object> response = restTemplate.postForObject(url, requestBody, Map.class);
-
+        // 将任务提交到队列异步执行
+        taskExecutorService.executeAssistFunctionAsync(requestBody);
+        
+        // 返回任务已提交的响应
+        Map<String, Object> response = new HashMap<>();
+        response.put("code", 200);
+        response.put("message", "任务已提交，正在后台处理中");
         return response;
     }
 
@@ -512,11 +398,13 @@ public class MarkController {
         requestBody.put("taskid", taskId.toString());
         requestBody.put("mapfile_path", mapfile_path.toString());
 
-        // 发送 POST 请求到 FastAPI
-        RestTemplate restTemplate = new RestTemplate();
-        String url = "http://localhost:5000/update_label"; // FastAPI 服务地址
-        Map<String, Object> response = restTemplate.postForObject(url, requestBody, Map.class);
-
+        // 将任务提交到队列异步执行
+        taskExecutorService.executeUpdateLabelAsync(requestBody);
+        
+        // 返回任务已提交的响应
+        Map<String, Object> response = new HashMap<>();
+        response.put("code", 200);
+        response.put("message", "更新任务已提交，正在后台处理中");
         return response;
 //        try {
 //            //将"/home/change/anaconda3/envs/label_env/bin/python"换成你python解释器的路径位置
