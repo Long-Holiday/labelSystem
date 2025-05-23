@@ -224,8 +224,10 @@ public class MarkController {
         }
 
         // 设置文件路径
-        Path mapfile_path = Paths.get(System.getProperty("user.dir") + File.separator +
-                "src/main/java/com/example/labelMark/resource/output");
+        String file_name = taskService.getServerById(Integer.parseInt(taskId));
+
+        Path mapfile_path = Path.of(Paths.get(System.getProperty("user.dir") + File.separator +
+                "src/main/java/com/example/labelMark/resource/output") + File.separator + file_name);
 
         // 准备请求体
         Map<String, Object> requestBody = new HashMap<>();
@@ -308,8 +310,10 @@ public class MarkController {
         }
 
         // 设置文件路径
-        Path mapfile_path = Paths.get(System.getProperty("user.dir") + File.separator +
-                "src/main/java/com/example/labelMark/resource/output");
+        String file_name = taskService.getServerById(Integer.parseInt(taskId));
+
+        Path mapfile_path = Path.of(Paths.get(System.getProperty("user.dir") + File.separator +
+                "src/main/java/com/example/labelMark/resource/output") + File.separator + file_name);
 
         // 准备请求体
         Map<String, Object> requestBody = new HashMap<>();
@@ -341,11 +345,10 @@ public class MarkController {
 
     @PostMapping("/getModelList")
     public Map<String, Object> getModelList(@RequestBody Map<String, String> request) {
-        // 获取前端传来的用户ID
+        // 获取前端传来的用户ID和任务类型
         String userIdStr = request.get("user_id");
-        System.out.println("当前userid为" + userIdStr);
-
-        String taskType = request.get("task_type");
+        String taskType = request.get("task_type"); // 新增任务类型参数
+        System.out.println("当前userid为" + userIdStr + ", taskType为" + taskType);
 
         Map<String, Object> response = new HashMap<>();
 
@@ -357,12 +360,22 @@ public class MarkController {
 
         try {
             Integer userId = Integer.valueOf(userIdStr);
-            // 调用 ModelService 获取模型数据 Map
-            Map<String, String> modelMap = modelService.getModelMapByUserId(userId, taskType);
+            Map<String, String> modelMap;
+            
+            // 根据是否传递task_type来决定获取模型的方式
+            if (taskType != null && !taskType.trim().isEmpty()) {
+                // 按任务类型筛选模型
+                modelMap = modelService.getModelMapByUserId(userId, taskType);
+                System.out.println("按任务类型筛选 - Model List for user " + userId + " and taskType " + taskType + ": " + modelMap);
+            } else {
+                // 获取该用户的全部模型数据
+                modelMap = modelService.getModelMapByUserId(userId);
+                System.out.println("获取全部模型 - Model List for user " + userId + ": " + modelMap);
+            }
 
             if (modelMap.isEmpty()) {
                 response.put("code", StatusEnum.SUCCESS.code);
-                response.put("message", "该用户没有关联的模型");
+                response.put("message", taskType != null ? "该用户在此任务类型下没有关联的模型" : "该用户没有关联的模型");
                 response.put("data", new HashMap<>()); // 返回空 Map
             } else {
                 response.put("code", StatusEnum.SUCCESS.code);
@@ -370,7 +383,6 @@ public class MarkController {
                 response.put("data", modelMap);
             }
 
-            System.out.println("Model List for user " + userId + ": " + modelMap);
             return response;
 
         } catch (NumberFormatException e) {

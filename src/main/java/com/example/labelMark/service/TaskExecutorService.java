@@ -53,6 +53,31 @@ public class TaskExecutorService {
     }
 
     /**
+     * 异步执行批量辅助功能任务
+     *
+     * @param requestBody 请求体
+     * @return 异步执行结果
+     */
+    public CompletableFuture<Map<String, Object>> executeMultiAssistFunctionAsync(Map<String, Object> requestBody) {
+        logger.info("提交批量辅助功能任务到队列: taskIds={}, functionName={}", 
+                requestBody.get("taskid"), requestBody.get("functionName"));
+        
+        return CompletableFuture.supplyAsync(() -> {
+            logger.info("开始执行批量辅助功能任务: taskIds={}, functionName={}",
+                    requestBody.get("taskid"), requestBody.get("functionName"));
+            try {
+                String url = "http://localhost:5000/Multi_assistFunction";
+                Map<String, Object> response = restTemplate.postForObject(url, requestBody, Map.class);
+                logger.info("批量辅助功能任务执行完成: taskIds={}", requestBody.get("taskid"));
+                return response;
+            } catch (Exception e) {
+                logger.error("批量辅助功能任务执行异常: taskIds={}, error={}", requestBody.get("taskid"), e.getMessage(), e);
+                throw new RuntimeException("执行批量辅助功能任务失败: " + e.getMessage(), e);
+            }
+        }, assistFunctionExecutor);
+    }
+
+    /**
      * 异步执行推理功能任务
      *
      * @param requestBody 请求体

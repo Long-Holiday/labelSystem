@@ -11,10 +11,14 @@ import com.example.labelMark.service.SysUserService;
 import com.example.labelMark.service.TaskAcceptedService;
 import com.example.labelMark.service.TaskService;
 import com.example.labelMark.service.TypeService;
+import com.example.labelMark.service.TaskExecutorService;
 import com.example.labelMark.utils.ResultGenerator;
 import com.example.labelMark.vo.LoginUser;
 import com.example.labelMark.vo.TaskInfoDTO;
 import com.example.labelMark.vo.constant.Result;
+import com.example.labelMark.vo.constant.StatusEnum;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.models.auth.In;
@@ -23,6 +27,9 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.validation.constraints.Pattern;
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -51,6 +58,8 @@ public class TaskController {
     private TaskAcceptedService taskAcceptedService;
     @Resource
     private MarkService markService;
+    @Resource
+    private TaskExecutorService taskExecutorService;
 
 
     @PostMapping("/createTask")
@@ -632,6 +641,93 @@ public class TaskController {
         response.put("success", true);
         response.put("markGeoJsonArr", convertGeojson(marks));
         return response;
+    }
+
+    @PostMapping("/batchTrain")
+    public Map<String, Object> batchTrain(@RequestBody Map<String, Object> request) {
+        try {
+            // 获取前端传来的参数
+            @SuppressWarnings("unchecked")
+            List<String> taskIds = (List<String>) request.get("taskids");
+            String taskType = request.get("task_type") != null ? request.get("task_type").toString() : "";
+            String userId = request.get("user_id") != null ? request.get("user_id").toString() : null;
+            String functionName = request.get("functionName") != null ? request.get("functionName").toString() : "";
+            String assistInput = request.get("assistInput") != null ? request.get("assistInput").toString() : "";
+            String modelName = request.get("modelName") != null ? request.get("modelName").toString() : "";
+            
+            @SuppressWarnings("unchecked")
+            Map<String, Object> params = (Map<String, Object>) request.get("parameters");
+            
+            // 获取参数，处理可能的 null 值
+            String param1 = params.get("param1") != null ? params.get("param1").toString() : "";
+            String param2 = params.get("param2") != null ? params.get("param2").toString() : "";
+            String param3 = params.get("param3") != null ? params.get("param3").toString() : "";
+            String param4 = params.get("param4") != null ? params.get("param4").toString() : "";
+            
+            // 处理categoryMapping，确保是有效的JSON格式
+            String categoryMapping = "{}";
+            if (params.get("categoryMapping") != null) {
+                try {
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    Map<String, Object> mappingMap;
+                    // 尝试将参数解析为Map
+                    if (params.get("categoryMapping") instanceof String) {
+                        mappingMap = objectMapper.readValue(params.get("categoryMapping").toString(), 
+                                                          new TypeReference<Map<String, Object>>() {});
+                    } else {
+                        mappingMap = (Map<String, Object>) params.get("categoryMapping");
+                    }
+                    // 转换为标准JSON字符串
+                    categoryMapping = objectMapper.writeValueAsString(mappingMap);
+                } catch (Exception e) {
+                    // 如果解析失败，使用空对象
+                    System.err.println("解析categoryMapping失败: " + e.getMessage());
+                    categoryMapping = "{}";
+                }
+            }
+            
+            // 构造mapfile_path列表
+            List<String> mapfilePaths = new ArrayList<>();
+            for (String taskId : taskIds) {
+                String fileName = taskService.getServerById(Integer.parseInt(taskId));
+                Path mapfilePath = Path.of(Paths.get(System.getProperty("user.dir") + File.separator +
+                        "src/main/java/com/example/labelMark/resource/output") + File.separator + fileName);
+                mapfilePaths.add(mapfilePath.toString());
+            }
+            
+            // 准备请求体
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("taskid", taskIds);
+            requestBody.put("mapfile_path", mapfilePaths);
+            requestBody.put("functionName", functionName);
+            requestBody.put("assistInput", assistInput);
+            requestBody.put("modelName", modelName);
+            requestBody.put("param1", param1);
+            requestBody.put("param2", param2);
+            requestBody.put("param3", param3);
+            requestBody.put("param4", param4);
+            requestBody.put("categoryMapping", categoryMapping);
+            requestBody.put("user_id", userId);
+            requestBody.put("tasktype", taskType);
+            
+            System.out.println("批量训练请求体: " + requestBody);
+            
+            // 将任务提交到队列异步执行
+            taskExecutorService.executeMultiAssistFunctionAsync(requestBody);
+            
+            // 返回任务已提交的响应
+            Map<String, Object> response = new HashMap<>();
+            response.put("code", 200);
+            response.put("message", "批量训练任务已提交，正在后台处理中");
+            return response;
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, Object> response = new HashMap<>();
+            response.put("code", StatusEnum.FAIL.code);
+            response.put("message", "批量训练任务提交失败: " + e.getMessage());
+            return response;
+        }
     }
 }
 

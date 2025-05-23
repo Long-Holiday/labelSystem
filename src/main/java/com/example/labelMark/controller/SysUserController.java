@@ -227,13 +227,31 @@ public class SysUserController {
         map.put("currentUser", "");
         map.put("isAdmin", 0);
         map.put("score", 0);
+        map.put("teamId", null);
+        map.put("teamName", null);
         
         if (ObjectUtil.isNotNull(currentUser)) {
             map.put("currentUser", currentUser.getUsername());
             map.put("isAdmin", currentUser.getIsadmin());
             map.put("score", currentUser.getScore() != null ? currentUser.getScore() : 0);
+            
+            // 添加团队信息
+            if (currentUser.getTeamId() != null) {
+                map.put("teamId", currentUser.getTeamId());
+                // 获取团队名称
+                try {
+                    TeamTable team = teamService.getById(currentUser.getTeamId());
+                    if (team != null) {
+                        map.put("teamName", team.getName());
+                    }
+                } catch (Exception e) {
+                    System.out.println("获取团队信息失败: " + e.getMessage());
+                }
+            }
+            
             // 添加日志输出，帮助调试
             System.out.println("用户积分: " + currentUser.getScore());
+            System.out.println("用户团队ID: " + currentUser.getTeamId());
         }
         return map;
     }

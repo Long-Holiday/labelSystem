@@ -36,6 +36,15 @@ public class ModelServiceImpl extends ServiceImpl<ModelMapper, Model> implements
     }
 
     @Override
+    public Map<String, String> getModelMapByUserId(Integer userId) {
+        List<Model> modelList = getModelListByUserIdWithoutTaskType(userId);
+        // 使用 Stream API 将 List<Model> 转换为 Map<String, String>
+        return modelList.stream()
+                .filter(model -> model.getModelName() != null && model.getModelDes() != null) // 修正为实际的 getter 方法名
+                .collect(Collectors.toMap(Model::getModelName, Model::getModelDes, (existing, replacement) -> existing)); // 使用一致的 getter 方法
+    }
+
+    @Override
     public List<Model> getModelListByUserId(Integer userId, String taskType) {
         return modelMapper.selectByUserId(userId, taskType);
     }
